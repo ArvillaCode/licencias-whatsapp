@@ -9,7 +9,7 @@ dashboardRouter.get('/summary', async (req, res) => {
   const currentMonth = now.getMonth() + 1;
 
   const records = await prisma.monthlyRecord.findMany({
-    where: { year },
+    where: { year, bill: { billType: { active: true } } },
     include: {
       evidences: true,
       bill: { include: { billType: true, unit: true } },
@@ -46,7 +46,7 @@ dashboardRouter.get('/summary', async (req, res) => {
   }
 
   const upcomingDueDates = await prisma.bill.findMany({
-    where: { dueDate: { not: null } },
+    where: { dueDate: { not: null }, billType: { active: true } },
     include: { billType: true, unit: true },
     orderBy: { dueDate: 'asc' },
     take: 5,

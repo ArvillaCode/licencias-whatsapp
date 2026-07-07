@@ -5,7 +5,7 @@ export const billsRouter = Router();
 
 billsRouter.get('/units/:unitId/bills', async (req, res) => {
   const bills = await prisma.bill.findMany({
-    where: { unitId: Number(req.params.unitId) },
+    where: { unitId: Number(req.params.unitId), billType: { active: true } },
     include: { billType: true },
     orderBy: { billType: { order: 'asc' } },
   });

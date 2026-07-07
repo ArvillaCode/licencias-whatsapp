@@ -36,5 +36,12 @@ export function createApp() {
   api.use('/dashboard', dashboardRouter);
   app.use('/api', api);
 
+  const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+
   return app;
 }

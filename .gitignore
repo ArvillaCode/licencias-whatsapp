@@ -1,8 +1,8 @@
 node_modules/
 dist/
 build/
-backend/data/*.db
-backend/data/*.db-journal
+backend/prisma/data/*.db
+backend/prisma/data/*.db-journal
 backend/uploads/evidence/*
 !backend/uploads/evidence/.gitkeep
 backend/.env
