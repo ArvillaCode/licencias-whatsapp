@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Unit {
+  id          Int      @id @default(autoincrement())
+  address     String
+  apartmentNo String
+  name        String?
+  tenantName  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  bills       Bill[]
+}
+
+model BillType {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  order  Int     @default(0)
+  active Boolean @default(true)
+  bills  Bill[]
+}
+
+model Bill {
+  id             Int             @id @default(autoincrement())
+  unitId         Int
+  unit           Unit            @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  billTypeId     Int
+  billType       BillType        @relation(fields: [billTypeId], references: [id])
+  billNumber     String?
+  dueDate        DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  monthlyRecords MonthlyRecord[]
+
+  @@unique([unitId, billTypeId])
+}
+
+model MonthlyRecord {
+  id            Int        @id @default(autoincrement())
+  billId        Int
+  bill          Bill       @relation(fields: [billId], references: [id], onDelete: Cascade)
+  month         Int
+  year          Int
+  responsible   String?
+  amountPaid    Float?
+  paymentMethod String?
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  evidences     Evidence[]
+
+  @@unique([billId, month, year])
+}
+
+model Evidence {
+  id              Int           @id @default(autoincrement())
+  monthlyRecordId Int
+  monthlyRecord   MonthlyRecord @relation(fields: [monthlyRecordId], references: [id], onDelete: Cascade)
+  fileName        String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int
+  uploadedAt      DateTime      @default(now())
+}
+
+model PaymentMethod {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  active Boolean @default(true)
+}
+
+model Responsible {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  active Boolean @default(true)
+}
