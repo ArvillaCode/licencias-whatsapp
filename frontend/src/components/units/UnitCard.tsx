@@ -23,7 +23,13 @@ export function UnitCard({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) =>
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>{unit.address}</div>
+          <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+            <InlineEditable
+              value={unit.address}
+              onSave={(v) => updateUnit.mutate({ id: unit.id, input: { address: v } })}
+              fontSize="var(--font-size-sm)"
+            />
+          </div>
           <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, marginTop: 2 }}>
             Apto{' '}
             <InlineEditable

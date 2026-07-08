@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import type { CatalogItem } from '../../types/models';
+import { InlineEditable } from '../common/InlineEditable';
 
 interface CatalogManagerProps {
   title: string;
@@ -52,16 +53,14 @@ export function CatalogManager({ title, items, isLoading, onCreate, onToggleActi
               opacity: item.active ? 1 : 0.5,
             }}
           >
-            <input
-              defaultValue={item.name}
-              className="input"
-              style={{ flex: 1, border: 'none', background: 'transparent', padding: '0.2rem' }}
-              onBlur={(e) => {
-                if (e.target.value.trim() && e.target.value.trim() !== item.name) {
-                  onRename(item, e.target.value.trim());
-                }
-              }}
-            />
+            <div style={{ flex: 1 }}>
+              <InlineEditable
+                value={item.name}
+                onSave={(v) => {
+                  if (v) onRename(item, v);
+                }}
+              />
+            </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
               <input type="checkbox" checked={item.active} onChange={() => onToggleActive(item)} />
               Activo

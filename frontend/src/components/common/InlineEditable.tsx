@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 interface InlineEditableProps {
   value: string;
   placeholder?: string;
   onSave: (value: string) => void;
-  as?: 'span' | 'div';
   fontWeight?: number | string;
   fontSize?: string;
+  displayStyle?: CSSProperties;
+  title?: string;
 }
 
-export function InlineEditable({ value, placeholder, onSave, fontWeight, fontSize }: InlineEditableProps) {
+export function InlineEditable({ value, placeholder, onSave, fontWeight, fontSize, displayStyle, title }: InlineEditableProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,13 +52,14 @@ export function InlineEditable({ value, placeholder, onSave, fontWeight, fontSiz
         e.stopPropagation();
         setEditing(true);
       }}
-      title="Click para editar"
+      title={title ?? 'Click para editar'}
       style={{
         fontWeight,
         fontSize,
         cursor: 'text',
         borderBottom: '1px dashed transparent',
         color: value ? 'inherit' : 'var(--color-text-muted)',
+        ...displayStyle,
       }}
       onMouseEnter={(e) => (e.currentTarget.style.borderBottomColor = 'var(--color-accent)')}
       onMouseLeave={(e) => (e.currentTarget.style.borderBottomColor = 'transparent')}

@@ -41,17 +41,13 @@ export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
-              <td
-                title={unit.address}
-                style={{
-                  padding: '0.6rem 1rem',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  maxWidth: 0,
-                }}
-              >
-                {unit.address}
+              <td style={{ padding: '0.6rem 1rem', maxWidth: 0 }}>
+                <InlineEditable
+                  value={unit.address}
+                  title={unit.address}
+                  displayStyle={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  onSave={(v) => updateUnit.mutate({ id: unit.id, input: { address: v } })}
+                />
               </td>
               <td style={{ padding: '0.6rem 1rem', fontWeight: 600 }}>
                 <InlineEditable

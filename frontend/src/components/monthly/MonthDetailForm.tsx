@@ -21,6 +21,7 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
   const [amountPaid, setAmountPaid] = useState(record.amountPaid?.toString() ?? '');
   const [paymentMethod, setPaymentMethod] = useState(record.paymentMethod ?? '');
   const [justSaved, setJustSaved] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     setPaidAt(record.paidAt ? record.paidAt.slice(0, 10) : '');
@@ -28,6 +29,7 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
     setAmountPaid(record.amountPaid?.toString() ?? '');
     setPaymentMethod(record.paymentMethod ?? '');
     setJustSaved(false);
+    setValidationError(null);
   }, [record.id]);
 
   const dirty =
@@ -37,6 +39,18 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
     paymentMethod !== (record.paymentMethod ?? '');
 
   function handleSave() {
+    const missing: string[] = [];
+    if (!paidAt) missing.push('Fecha de pago');
+    if (!responsible.trim()) missing.push('Responsable');
+    if (amountPaid === '') missing.push('Total pagado');
+    if (!paymentMethod.trim()) missing.push('Medio de pago');
+
+    if (missing.length > 0) {
+      setValidationError(`Completa los campos obligatorios: ${missing.join(', ')}.`);
+      return;
+    }
+    setValidationError(null);
+
     updateRecord.mutate(
       {
         id: record.id,
@@ -65,7 +79,7 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxWidth: 220 }}>
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-accent)', textTransform: 'uppercase', fontWeight: 600 }}>
-          📅 Fecha de pago
+          📅 Fecha de pago *
         </span>
         <input
           className="input"
@@ -78,7 +92,7 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.9rem' }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-            Responsable
+            Responsable *
           </span>
           <input
             className="input"
@@ -87,13 +101,13 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
             onChange={(e) => setResponsible(e.target.value)}
           />
           <datalist id="responsibles-list">
-            {responsibles?.map((r) => <option key={r.id} value={r.name} />)}
+            {responsibles?.filter((r) => r.active).map((r) => <option key={r.id} value={r.name} />)}
           </datalist>
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-            Total pagado
+            Total pagado *
           </span>
           <input
             className="input"
@@ -106,7 +120,7 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-            Medio de pago
+            Medio de pago *
           </span>
           <input
             className="input"
@@ -115,21 +129,26 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
             onChange={(e) => setPaymentMethod(e.target.value)}
           />
           <datalist id="payment-methods-list">
-            {paymentMethods?.map((m) => <option key={m.id} value={m.name} />)}
+            {paymentMethods?.filter((m) => m.active).map((m) => <option key={m.id} value={m.name} />)}
           </datalist>
         </label>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <button
-          className="btn btn-primary"
-          onClick={handleSave}
-          disabled={!dirty || updateRecord.isPending}
-        >
-          {updateRecord.isPending ? 'Guardando…' : 'Guardar'}
-        </button>
-        {justSaved && (
-          <span style={{ color: 'var(--color-success)', fontSize: 'var(--font-size-sm)' }}>✓ Guardado</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleSave}
+            disabled={!dirty || updateRecord.isPending}
+          >
+            {updateRecord.isPending ? 'Guardando…' : 'Guardar'}
+          </button>
+          {justSaved && (
+            <span style={{ color: 'var(--color-success)', fontSize: 'var(--font-size-sm)' }}>✓ Guardado</span>
+          )}
+        </div>
+        {validationError && (
+          <div style={{ color: 'var(--color-danger)', fontSize: 'var(--font-size-sm)' }}>⚠ {validationError}</div>
         )}
       </div>
 

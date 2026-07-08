@@ -6,7 +6,6 @@ import { ThemeToggle } from './ThemeToggle';
 import { MainNav } from './MainNav';
 
 const EDITABLE_DATA_ITEMS = [
-  { to: '/unidades', label: 'Gestión de Unidades', icon: '🏢' },
   { to: '/configuracion/tipos-recibo', label: 'Tipos de Recibo/Gasto', icon: '🧾' },
   { to: '/configuracion/medios-pago', label: 'Medios de Pago', icon: '💳' },
   { to: '/configuracion/responsables', label: 'Responsables', icon: '🙋' },
