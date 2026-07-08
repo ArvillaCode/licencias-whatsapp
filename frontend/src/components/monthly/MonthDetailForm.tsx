@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { MonthlyRecord } from '../../types/models';
 import { paymentMethodsHooks, responsiblesHooks } from '../../hooks/useCatalogs';
 import { useDeleteEvidence, useUpdateMonthlyRecord, useUploadEvidence } from '../../hooks/useMonthlyRecords';
@@ -16,19 +16,44 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
   const { data: paymentMethods } = paymentMethodsHooks.useList();
   const { data: responsibles } = responsiblesHooks.useList();
 
+  const [paidAt, setPaidAt] = useState(record.paidAt ? record.paidAt.slice(0, 10) : '');
   const [responsible, setResponsible] = useState(record.responsible ?? '');
   const [amountPaid, setAmountPaid] = useState(record.amountPaid?.toString() ?? '');
   const [paymentMethod, setPaymentMethod] = useState(record.paymentMethod ?? '');
+  const [justSaved, setJustSaved] = useState(false);
 
-  function save(partial: Partial<{ responsible: string; amountPaid: string; paymentMethod: string }>) {
-    updateRecord.mutate({
-      id: record.id,
-      input: {
-        responsible: partial.responsible ?? responsible,
-        amountPaid: (partial.amountPaid ?? amountPaid) === '' ? null : Number(partial.amountPaid ?? amountPaid),
-        paymentMethod: partial.paymentMethod ?? paymentMethod,
+  useEffect(() => {
+    setPaidAt(record.paidAt ? record.paidAt.slice(0, 10) : '');
+    setResponsible(record.responsible ?? '');
+    setAmountPaid(record.amountPaid?.toString() ?? '');
+    setPaymentMethod(record.paymentMethod ?? '');
+    setJustSaved(false);
+  }, [record.id]);
+
+  const dirty =
+    paidAt !== (record.paidAt ? record.paidAt.slice(0, 10) : '') ||
+    responsible !== (record.responsible ?? '') ||
+    amountPaid !== (record.amountPaid?.toString() ?? '') ||
+    paymentMethod !== (record.paymentMethod ?? '');
+
+  function handleSave() {
+    updateRecord.mutate(
+      {
+        id: record.id,
+        input: {
+          paidAt: paidAt || null,
+          responsible,
+          amountPaid: amountPaid === '' ? null : Number(amountPaid),
+          paymentMethod,
+        },
       },
-    });
+      {
+        onSuccess: () => {
+          setJustSaved(true);
+          setTimeout(() => setJustSaved(false), 2000);
+        },
+      }
+    );
   }
 
   return (
@@ -37,6 +62,18 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
       style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
     >
       <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)' }}>{MONTH_NAMES[record.month - 1]} {record.year}</h3>
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxWidth: 220 }}>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-accent)', textTransform: 'uppercase', fontWeight: 600 }}>
+          📅 Fecha de pago
+        </span>
+        <input
+          className="input"
+          type="date"
+          value={paidAt}
+          onChange={(e) => setPaidAt(e.target.value)}
+        />
+      </label>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.9rem' }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -48,7 +85,6 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
             list="responsibles-list"
             value={responsible}
             onChange={(e) => setResponsible(e.target.value)}
-            onBlur={() => save({ responsible })}
           />
           <datalist id="responsibles-list">
             {responsibles?.map((r) => <option key={r.id} value={r.name} />)}
@@ -65,7 +101,6 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
             step="0.01"
             value={amountPaid}
             onChange={(e) => setAmountPaid(e.target.value)}
-            onBlur={() => save({ amountPaid })}
           />
         </label>
 
@@ -78,12 +113,24 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
             list="payment-methods-list"
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            onBlur={() => save({ paymentMethod })}
           />
           <datalist id="payment-methods-list">
             {paymentMethods?.map((m) => <option key={m.id} value={m.name} />)}
           </datalist>
         </label>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={!dirty || updateRecord.isPending}
+        >
+          {updateRecord.isPending ? 'Guardando…' : 'Guardar'}
+        </button>
+        {justSaved && (
+          <span style={{ color: 'var(--color-success)', fontSize: 'var(--font-size-sm)' }}>✓ Guardado</span>
+        )}
       </div>
 
       <div>

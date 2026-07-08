@@ -12,7 +12,7 @@ export function MonthCard({
   onClick: () => void;
 }) {
   const hasEvidence = record.evidences.length > 0;
-  const hasPayment = record.amountPaid != null;
+  const hasPayment = record.amountPaid != null || record.paidAt != null;
   const status: 'done' | 'partial' | 'empty' = hasEvidence && hasPayment ? 'done' : hasEvidence || hasPayment ? 'partial' : 'empty';
 
   const dotColor =
@@ -34,9 +34,14 @@ export function MonthCard({
     >
       <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>{MONTH_LABELS[record.month - 1]}</span>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor }} />
-      {hasPayment && (
+      {record.amountPaid != null && (
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-          {record.amountPaid!.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+          {record.amountPaid.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+        </span>
+      )}
+      {record.amountPaid == null && record.paidAt != null && (
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+          {new Date(record.paidAt).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' })}
         </span>
       )}
     </button>
