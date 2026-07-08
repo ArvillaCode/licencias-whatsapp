@@ -4,6 +4,7 @@ export interface Unit {
   apartmentNo: string;
   name: string | null;
   tenantName: string | null;
+  order: number;
   createdAt: string;
   updatedAt: string;
 }

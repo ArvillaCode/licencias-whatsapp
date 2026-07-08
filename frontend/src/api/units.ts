@@ -14,4 +14,5 @@ export const unitsApi = {
   create: (input: UnitInput) => api.post<Unit>('/units', input),
   update: (id: number, input: Partial<UnitInput>) => api.put<Unit>(`/units/${id}`, input),
   remove: (id: number) => api.delete<void>(`/units/${id}`),
+  reorder: (orderedIds: number[]) => api.put<{ ok: true }>('/units/reorder', { orderedIds }),
 };

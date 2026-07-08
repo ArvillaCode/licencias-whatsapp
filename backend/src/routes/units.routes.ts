@@ -5,8 +5,21 @@ import { createBillsForUnit } from '../lib/billHelpers';
 export const unitsRouter = Router();
 
 unitsRouter.get('/', async (_req, res) => {
-  const units = await prisma.unit.findMany({ orderBy: { id: 'asc' } });
+  const units = await prisma.unit.findMany({ orderBy: [{ order: 'asc' }, { id: 'asc' }] });
   res.json(units);
+});
+
+unitsRouter.put('/reorder', async (req, res) => {
+  const { orderedIds } = req.body ?? {};
+  if (!Array.isArray(orderedIds) || orderedIds.some((id) => typeof id !== 'number')) {
+    return res.status(400).json({ error: 'orderedIds debe ser un arreglo de números' });
+  }
+  await prisma.$transaction(
+    orderedIds.map((id: number, index: number) =>
+      prisma.unit.update({ where: { id }, data: { order: index } })
+    )
+  );
+  res.json({ ok: true });
 });
 
 unitsRouter.get('/:id', async (req, res) => {
@@ -23,7 +36,10 @@ unitsRouter.post('/', async (req, res) => {
   if (!address || !apartmentNo) {
     return res.status(400).json({ error: 'address y apartmentNo son requeridos' });
   }
-  const unit = await prisma.unit.create({ data: { address, apartmentNo, name, tenantName } });
+  const maxOrder = await prisma.unit.aggregate({ _max: { order: true } });
+  const unit = await prisma.unit.create({
+    data: { address, apartmentNo, name, tenantName, order: (maxOrder._max.order ?? -1) + 1 },
+  });
   await createBillsForUnit(prisma, unit.id, new Date().getFullYear());
   res.status(201).json(unit);
 });
