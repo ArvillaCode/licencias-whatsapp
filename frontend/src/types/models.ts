@@ -29,6 +29,7 @@ export interface Evidence {
   id: number;
   monthlyRecordId: number;
   fileName: string;
+  url: string;
   originalName: string;
   mimeType: string;
   sizeBytes: number;

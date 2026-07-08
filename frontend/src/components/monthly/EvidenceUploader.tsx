@@ -25,7 +25,7 @@ export function EvidenceUploader({
             style={{ position: 'relative', width: 84, height: 84, overflow: 'hidden', cursor: 'pointer' }}
           >
             <img
-              src={`/uploads/evidence/${ev.monthlyRecordId}/${ev.fileName}`}
+              src={ev.url}
               alt={ev.originalName}
               onClick={() => setPreview(ev)}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -96,7 +96,7 @@ export function EvidenceUploader({
           }}
         >
           <img
-            src={`/uploads/evidence/${preview.monthlyRecordId}/${preview.fileName}`}
+            src={preview.url}
             alt={preview.originalName}
             style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8 }}
           />

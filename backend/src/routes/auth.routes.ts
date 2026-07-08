@@ -25,6 +25,7 @@ authRouter.post(
     res.cookie(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: 'lax',
+      secure: !!process.env.VERCEL,
       maxAge: AUTH_COOKIE_MAX_AGE_MS,
     });
     res.json({ id: user.id, username: user.username });
@@ -32,7 +33,11 @@ authRouter.post(
 );
 
 authRouter.post('/logout', (_req, res) => {
-  res.clearCookie(AUTH_COOKIE_NAME);
+  res.clearCookie(AUTH_COOKIE_NAME, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: !!process.env.VERCEL,
+  });
   res.json({ ok: true });
 });
 

@@ -1,24 +1,12 @@
-import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
-import { v4 as uuid } from 'uuid';
 
 const UPLOAD_ROOT = path.join(__dirname, '..', '..', 'uploads', 'evidence');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 
-const storage = multer.diskStorage({
-  destination: (req, _file, cb) => {
-    const monthlyRecordId = req.params.id;
-    const dir = path.join(UPLOAD_ROOT, monthlyRecordId);
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '';
-    cb(null, `${uuid()}${ext}`);
-  },
-});
+// Guardamos en memoria: en Vercel subimos el buffer a Blob; en local lo escribimos a disco.
+const storage = multer.memoryStorage();
 
 export const uploadEvidence = multer({
   storage,

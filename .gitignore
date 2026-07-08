@@ -1,6 +1,9 @@
 node_modules/
 dist/
 build/
+.vercel
+.env
+.env*.local
 backend/prisma/data/*.db
 backend/prisma/data/*.db-journal
 backend/uploads/evidence/*
