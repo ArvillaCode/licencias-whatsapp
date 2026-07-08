@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Upfunnel Admin — Licencias</title>
+  <link rel="stylesheet" href="auth.css" />
+  <script src="theme.js"></script>
+  <style>
+    .admin-wrap { max-width: 900px; margin: 24px auto; padding: 0 20px; width: 100%; }
+    .admin-wrap h1 { color: var(--primary); }
+    .admin-wrap h2 { margin-top: 32px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
+    .admin-wrap section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+    .admin-wrap label { display: block; font-weight: 600; margin: 8px 0 4px; }
+    .admin-wrap input[type="text"], .admin-wrap input[type="email"], .admin-wrap input[type="date"], .admin-wrap textarea {
+      width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box; font-family: monospace; background: var(--input-bg); color: var(--text);
+    }
+    .admin-wrap input:focus { outline: none; border-color: var(--primary); }
+    .admin-wrap textarea { min-height: 120px; resize: vertical; }
+    .admin-wrap .row { margin-bottom: 12px; }
+    .admin-wrap .row2 { display: flex; gap: 12px; }
+    .admin-wrap .row2 > div { flex: 1; }
+    .admin-wrap button { padding: 10px 16px; border: 1px solid var(--primary); background: var(--primary); color: var(--primary-text); font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .admin-wrap button:hover { background: var(--primary-hover); }
+    .admin-wrap button:disabled { opacity: .5; cursor: not-allowed; }
+    .admin-wrap button.secondary { background: var(--surface); color: var(--primary); }
+    .admin-wrap button.danger { border-color: var(--error-border); background: var(--surface); color: var(--error-text); }
+    .admin-wrap .status { padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-size: 13px; }
+    .admin-wrap .status.ok { background: var(--ok-bg); color: var(--ok-text); }
+    .admin-wrap .status.err { background: var(--error-bg); color: var(--error-text); }
+    .admin-wrap .status.info { background: var(--bg); color: var(--text-secondary); }
+    .admin-wrap table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    .admin-wrap th, .admin-wrap td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+    .admin-wrap th { background: var(--bg); }
+    .admin-wrap .copy-btn { padding: 4px 10px; font-size: 12px; }
+    .admin-wrap .hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .admin-wrap code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .user-bar { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .user-bar span { font-size: 13px; color: var(--text-secondary); }
+    .user-bar button { padding: 6px 12px; font-size: 13px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" id="themeBtn" title="Cambiar tema">🌙</button>
+  <div class="admin-wrap" id="adminContent" style="display:none">
+    <div class="user-bar">
+      <span id="userInfo">—</span>
+      <button id="logoutBtn" class="secondary">Cerrar sesión</button>
+    </div>
+    <h1>Upfunnel Admin — Licencias</h1>
+    <p class="hint">Emite y gestiona licencias para "Upfunnel Contact Extract". Conectado al backend: <code id="backendUrlDisplay">—</code></p>
+
+    <h2>1. Emitir licencia</h2>
+    <section>
+      <div class="row2">
+        <div><label>Email del cliente</label><input type="email" id="licEmail" placeholder="cliente@correo.com" /></div>
+        <div><label>Número de WhatsApp (con + y país)</label><input type="text" id="licWa" placeholder="+573001234567" /></div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Fecha de inicio</label>
+          <input type="date" id="licStart" />
+          <span class="hint">Por defecto: hoy</span>
+        </div>
+        <div>
+          <label>Fecha de fin (ajustable)</label>
+          <input type="date" id="licEnd" />
+          <span class="hint">Recomendado: +30 días</span>
+        </div>
+      </div>
+      <div class="row">
+        <button id="issueBtn">Emitir licencia</button>
+        <button id="preset30Btn" class="secondary">+30 días</button>
+        <button id="preset90Btn" class="secondary">+90 días</button>
+        <button id="preset365Btn" class="secondary">+1 año</button>
+      </div>
+      <div id="issueStatus" class="status info">Completa los campos y pulsa "Emitir licencia".</div>
+      <div class="row">
+        <label>Clave de licencia (enviar al cliente):</label>
+        <textarea id="licenseOut" readonly placeholder="Aparecerá aquí tras emitir"></textarea>
+        <button id="copyLicBtn" class="copy-btn">Copiar licencia</button>
+      </div>
+    </section>
+
+    <h2>2. Licencias emitidas</h2>
+    <section>
+      <button id="refreshListBtn" class="secondary">Refrescar</button>
+      <button id="exportCsvBtn" class="secondary">Exportar CSV</button>
+      <table id="logTable">
+        <thead><tr><th>#</th><th>Email</th><th>WhatsApp</th><th>Inicio</th><th>Fin</th><th>Días</th><th>Estado</th><th>Activ.</th><th>Acciones</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </section>
+
+    <h2>3. Verificar una licencia (prueba)</h2>
+    <section>
+      <label>Pegar clave de licencia:</label>
+      <textarea id="verifyInput" placeholder="Pega una clave de licencia para simular la verificación que hace la extensión"></textarea>
+      <button id="verifyBtn">Verificar</button>
+      <div id="verifyResult" class="status info">—</div>
+    </section>
+  </div>
+
+  <div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;min-height:50vh;">
+    <p style="color:var(--text-secondary)">Verificando sesión...</p>
+  </div>
+
+  <script src="auth-helpers.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

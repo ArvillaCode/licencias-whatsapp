@@ -1,0 +1,21 @@
+{
+  "name": "contact-extract-license-backend",
+  "version": "1.0.0",
+  "description": "Backend de licencias para la extensión Contact Extract for WhatsApp",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "lowdb": "^7.0.1",
+    "nanoid": "^5.0.7"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

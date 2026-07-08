@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Contact Extract for WhatsApp</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>Contact Extract</h1>
+    <button id="reconnectBtn" class="reconnect-btn" title="Reconectar con WhatsApp Web">↻</button>
+    <p class="subtitle">Extrae contactos de un grupo de WhatsApp Web</p>
+  </header>
+
+  <section id="licenseGate" class="license-gate hidden">
+    <h2>Activar licencia</h2>
+    <p class="hint">Introduce la clave de licencia que recibiste. La licencia se valida localmente (sin servidor).</p>
+    <label>Clave de licencia:</label>
+    <textarea id="licenseInput" placeholder="Pega aquí tu clave de licencia..."></textarea>
+    <button id="activateBtn" class="btn primary">Activar</button>
+    <div id="licenseStatus" class="status"></div>
+    <div id="licenseActive" class="hidden">
+      <div class="lic-info">
+        <div><b>Titular:</b> <span id="licEmail">—</span></div>
+        <div><b>WhatsApp:</b> <span id="licWa">—</span></div>
+        <div><b>Vence:</b> <span id="licEnd">—</span> (<span id="licDays">—</span> días)</div>
+      </div>
+      <button id="deactivateBtn" class="btn danger small">Desactivar licencia</button>
+    </div>
+  </section>
+
+  <div id="mainApp" class="hidden">
+
+  <div id="warning" class="warning">
+    Extraer contactos puede violar los Términos de WhatsApp y causar el baneo de tu cuenta. Úsalo con moderación.
+  </div>
+
+  <section class="row">
+    <label for="groupSelect">Grupo:</label>
+    <select id="groupSelect" disabled>
+      <option value="">Cargando grupos...</option>
+    </select>
+    <button id="refreshBtn" class="btn small" title="Recargar lista de grupos">↻</button>
+  </section>
+
+  <div id="statsPanel" class="stats hidden">
+    <div class="stat"><span class="stat-num" id="statTotal">0</span><span class="stat-lbl">Integrantes</span></div>
+    <div class="stat"><span class="stat-num" id="statAdmins">0</span><span class="stat-lbl">Admins</span></div>
+    <div class="stat"><span class="stat-num" id="statMembers">0</span><span class="stat-lbl">Miembros</span></div>
+    <div class="stat"><span class="stat-num" id="statPhone">0</span><span class="stat-lbl">Con teléfono</span></div>
+    <div class="stat"><span class="stat-num" id="statLid">0</span><span class="stat-lbl">Solo LID</span></div>
+  </div>
+  <div id="statsLoading" class="stats-loading hidden">Calculando estadísticas...</div>
+
+  <section class="row">
+    <label class="check">
+      <input type="checkbox" id="aboutCheck" checked />
+      <span>Incluir "Acerca de" (más lento)</span>
+    </label>
+  </section>
+
+  <section class="row">
+    <button id="extractBtn" class="btn primary" disabled>Extraer contactos</button>
+  </section>
+
+  <section id="controls" class="controls hidden">
+    <button id="pauseBtn" class="btn">⏸ Pausar</button>
+    <button id="resumeBtn" class="btn hidden">▶ Reanudar</button>
+    <button id="cancelBtn" class="btn danger">✕ Cancelar</button>
+  </section>
+
+  <div id="progress" class="progress hidden">
+    <div class="bar"><div id="barFill" class="bar-fill"></div></div>
+    <div id="progressText" class="progress-text">0 / 0</div>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <section id="results" class="results hidden">
+    <div class="results-head">
+      <span id="resultsCount">0 contactos</span>
+      <div class="export-buttons">
+        <select id="formatSelect">
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+          <option value="xlsx">XLSX</option>
+        </select>
+        <button id="downloadBtn" class="btn primary">⬇ Descargar</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>#</th><th>Nombre</th><th>Pushname</th><th>Teléfono</th><th>LID</th><th>Rol</th><th>Acerca de</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  </div>
+
+  <script src="config.js"></script>
+  <script src="public-key.js"></script>
+  <script src="license.js"></script>
+  <script src="../lib/xlsx.full.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

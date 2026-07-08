@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Contact Extract for WhatsApp",
+  "version": "1.0.0",
+  "description": "Extrae contactos de tus grupos de WhatsApp Web a CSV, JSON y XLSX.",
+  "permissions": ["storage", "downloads", "scripting"],
+  "host_permissions": ["https://web.whatsapp.com/*"],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Contact Extract",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content/content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "resources": ["content/inject.js"]
+    }
+  ]
+}

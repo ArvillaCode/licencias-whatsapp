@@ -1,0 +1,164 @@
+/* auth.css — estilos para login/signup/admin con CSS variables para temas */
+:root {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --text: #111b21;
+  --text-secondary: #54656f;
+  --border: #d1d7db;
+  --primary: #25d366;
+  --primary-hover: #20c35b;
+  --primary-text: #064d2e;
+  --error-bg: #ffebee;
+  --error-text: #c62828;
+  --error-border: #ef9a9a;
+  --ok-bg: #e8f5e9;
+  --ok-text: #1b5e20;
+  --ok-border: #a5d6a7;
+  --input-bg: #ffffff;
+  --input-focus: #25d366;
+  --shadow: 0 2px 16px rgba(0,0,0,.08);
+}
+[data-theme="dark"] {
+  --bg: #0b141a;
+  --surface: #111b21;
+  --text: #e9edef;
+  --text-secondary: #8696a0;
+  --border: #2a3942;
+  --primary: #25d366;
+  --primary-hover: #20c35b;
+  --primary-text: #064d2e;
+  --error-bg: #3b1d1d;
+  --error-text: #ef9a9a;
+  --error-border: #5d2c2c;
+  --ok-bg: #1d2e1d;
+  --ok-text: #a5d6a7;
+  --ok-border: #2c5d2c;
+  --input-bg: #0b141a;
+  --input-focus: #25d366;
+  --shadow: 0 2px 16px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, color .2s;
+}
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: background .2s, border .2s;
+}
+.theme-toggle:hover { border-color: var(--primary); }
+.auth-card {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  transition: background .2s;
+}
+.auth-card h1 {
+  color: var(--primary);
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+.auth-card .subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.field {
+  margin-bottom: 16px;
+}
+.field label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  transition: border .2s;
+}
+.field input:focus { border-color: var(--input-focus); }
+.btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-text);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn:hover { background: var(--primary-hover); }
+.btn:disabled { opacity: .5; cursor: wait; }
+.auth-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.auth-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-link a:hover { text-decoration: underline; }
+.status {
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  display: none;
+}
+.status.show { display: block; }
+.status.error { background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); }
+.status.ok { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+.backend-url-field {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.backend-url-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: monospace;
+  margin-top: 4px;
+  outline: none;
+}
+.backend-url-field input:focus { border-color: var(--input-focus); }
