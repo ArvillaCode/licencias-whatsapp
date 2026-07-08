@@ -1,16 +1,23 @@
+import { useEffect, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Unit } from '../../types/models';
 import { useUnitEditor } from '../../hooks/useUnitEditor';
 
-export function UnitCard({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) => void }) {
+export function UnitCard({ unit, onOpen, index = 0 }: { unit: Unit; onOpen: (unit: Unit) => void; index?: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: unit.id });
   const editor = useUnitEditor(unit);
+  const [entering, setEntering] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setEntering(false), Math.min(index * 40, 400) + 450);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div
       ref={setNodeRef}
-      className="card-surface"
+      className={`card-surface${entering ? ' animate-fade-in-up' : ''}`}
       onClick={() => !editor.isEditing && onOpen(unit)}
       style={{
         padding: '1.1rem 1.2rem',
@@ -20,6 +27,7 @@ export function UnitCard({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) =>
         gap: '0.6rem',
         transform: CSS.Transform.toString(transform),
         transition: [transition, 'border-color 0.15s ease', 'box-shadow 0.15s ease'].filter(Boolean).join(', '),
+        ...(entering ? { animationDelay: `${Math.min(index * 40, 400)}ms` } : {}),
         ...(isDragging ? { opacity: 0.5, zIndex: 10 } : {}),
         ...(editor.isEditing ? { borderColor: 'var(--color-accent)' } : {}),
       }}

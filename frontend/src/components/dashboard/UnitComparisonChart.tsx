@@ -2,7 +2,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 export function UnitComparisonChart({ data }: { data: Array<{ unit: string; total: number }> }) {
   return (
-    <div className="card-surface" style={{ padding: '1.1rem', height: 340 }}>
+    <div className="card-surface animate-fade-in-up" style={{ padding: '1.1rem', height: 340, animationDelay: '250ms' }}>
       <h3 style={{ margin: '0 0 0.75rem', fontSize: 'var(--font-size-md)' }}>Total pagado por unidad (año)</h3>
       <ResponsiveContainer width="100%" height="88%">
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 0 }}>

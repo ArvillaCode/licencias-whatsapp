@@ -30,8 +30,8 @@ export function UnitGrid({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
             gap: '1rem',
           }}
         >
-          {units.map((unit) => (
-            <UnitCard key={unit.id} unit={unit} onOpen={onOpen} />
+          {units.map((unit, index) => (
+            <UnitCard key={unit.id} unit={unit} onOpen={onOpen} index={index} />
           ))}
         </div>
       </SortableContext>

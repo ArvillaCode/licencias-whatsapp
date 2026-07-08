@@ -1,6 +1,19 @@
-export function KpiTile({ label, value, tone }: { label: string; value: string; tone?: 'accent' | 'default' }) {
+export function KpiTile({
+  label,
+  value,
+  tone,
+  index = 0,
+}: {
+  label: string;
+  value: string;
+  tone?: 'accent' | 'default';
+  index?: number;
+}) {
   return (
-    <div className="card-surface" style={{ padding: '1.1rem 1.25rem', flex: '1 1 200px', minWidth: 180 }}>
+    <div
+      className="card-surface animate-fade-in-up"
+      style={{ padding: '1.1rem 1.25rem', flex: '1 1 200px', minWidth: 180, animationDelay: `${index * 60}ms` }}
+    >
       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
         {label}
       </div>

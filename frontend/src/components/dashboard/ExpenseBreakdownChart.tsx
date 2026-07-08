@@ -5,7 +5,7 @@ export function ExpenseBreakdownChart({ data }: { data: Array<{ name: string; to
   const hasData = data.some((d) => d.total > 0);
 
   return (
-    <div className="card-surface" style={{ padding: '1.1rem', height: 340 }}>
+    <div className="card-surface animate-fade-in-up" style={{ padding: '1.1rem', height: 340, animationDelay: '200ms' }}>
       <h3 style={{ margin: '0 0 0.75rem', fontSize: 'var(--font-size-md)' }}>Distribución del gasto por tipo</h3>
       {!hasData ? (
         <div style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>

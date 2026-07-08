@@ -18,7 +18,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`card-surface sidebar${mobileMenuOpen ? ' mobile-open' : ''}`}
+      className={`card-surface sidebar animate-fade-in${mobileMenuOpen ? ' mobile-open' : ''}`}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('a')) setMobileMenuOpen(false);

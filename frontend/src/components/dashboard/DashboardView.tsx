@@ -15,7 +15,7 @@ export function DashboardView() {
   const seriesNames = data?.expenseBreakdown.map((e) => e.name) ?? [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 'var(--font-size-2xl)' }}>Dashboard</h1>
@@ -38,12 +38,18 @@ export function DashboardView() {
       {data && (
         <>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <KpiTile label="Meses pendientes" value={String(data.kpis.pendingCount)} tone={data.kpis.pendingCount > 0 ? 'accent' : 'default'} />
             <KpiTile
+              index={0}
+              label="Meses pendientes"
+              value={String(data.kpis.pendingCount)}
+              tone={data.kpis.pendingCount > 0 ? 'accent' : 'default'}
+            />
+            <KpiTile
+              index={1}
               label={`Total pagado este mes`}
               value={data.kpis.totalPaidThisMonth.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
             />
-            <KpiTile label="Próximos vencimientos" value={String(data.kpis.upcomingDueDates.length)} />
+            <KpiTile index={2} label="Próximos vencimientos" value={String(data.kpis.upcomingDueDates.length)} />
           </div>
 
           {data.kpis.upcomingDueDates.length > 0 && (

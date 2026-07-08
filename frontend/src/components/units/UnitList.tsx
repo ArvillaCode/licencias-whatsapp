@@ -163,7 +163,7 @@ export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
   }
 
   return (
-    <div className="card-surface" style={{ overflow: 'auto' }}>
+    <div className="card-surface animate-fade-in-up" style={{ overflow: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
         <colgroup>
           <col style={{ width: 28 }} />

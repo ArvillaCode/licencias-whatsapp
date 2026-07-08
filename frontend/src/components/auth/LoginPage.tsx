@@ -40,7 +40,7 @@ export function LoginPage() {
     >
       <form
         onSubmit={handleSubmit}
-        className="card-surface"
+        className="card-surface animate-scale-in"
         style={{
           width: '100%',
           maxWidth: 380,

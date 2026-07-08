@@ -4,6 +4,10 @@ import { ah } from '../lib/asyncHandler';
 
 export const dashboardRouter = Router();
 
+// La app empezó a usarse en producción en julio 2026: los meses anteriores nunca se
+// llenaron a propósito y no deben contar como "pendientes".
+const PENDING_TRACKING_START = { year: 2026, month: 7 };
+
 dashboardRouter.get(
   '/summary',
   ah(async (req, res) => {
@@ -41,9 +45,12 @@ dashboardRouter.get(
       totalPaidThisMonth += amount;
     }
 
+    const afterTrackingStart =
+      year > PENDING_TRACKING_START.year ||
+      (year === PENDING_TRACKING_START.year && record.month >= PENDING_TRACKING_START.month);
     const isPastOrCurrent =
       year < now.getFullYear() || (year === now.getFullYear() && record.month <= currentMonth);
-    if (isPastOrCurrent && record.evidences.length === 0 && !record.amountPaid) {
+    if (afterTrackingStart && isPastOrCurrent && record.evidences.length === 0 && !record.amountPaid) {
       pendingCount += 1;
     }
   }

@@ -15,7 +15,7 @@ export function UnitsPage() {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 'var(--font-size-2xl)' }}>Unidades</h1>

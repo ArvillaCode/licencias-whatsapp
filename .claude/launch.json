@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:frontend"],
       "port": 5173
+    },
+    {
+      "name": "frontend-audit",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "exec", "--", "vite", "frontend", "--port", "5180", "--strictPort", "--host"],
+      "port": 5180
     }
   ]
 }

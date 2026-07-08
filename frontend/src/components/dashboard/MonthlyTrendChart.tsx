@@ -7,7 +7,7 @@ export function MonthlyTrendChart({ data, seriesNames }: { data: Array<Record<st
   const chartData = data.map((row) => ({ ...row, monthLabel: MONTH_LABELS[row.month - 1] }));
 
   return (
-    <div className="card-surface" style={{ padding: '1.1rem', height: 340 }}>
+    <div className="card-surface animate-fade-in-up" style={{ padding: '1.1rem', height: 340, animationDelay: '150ms' }}>
       <h3 style={{ margin: '0 0 0.75rem', fontSize: 'var(--font-size-md)' }}>Tendencia mensual por tipo de gasto</h3>
       <ResponsiveContainer width="100%" height="88%">
         <LineChart data={chartData} margin={{ top: 4, right: 12, left: -12, bottom: 0 }}>

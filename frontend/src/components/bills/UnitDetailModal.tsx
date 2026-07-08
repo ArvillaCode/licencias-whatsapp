@@ -26,6 +26,7 @@ export function UnitDetailModal({ unit, onClose }: { unit: Unit; onClose: () => 
   return (
     <div
       onClick={onClose}
+      className="animate-backdrop-in"
       style={{
         position: 'fixed',
         inset: 0,
@@ -39,7 +40,7 @@ export function UnitDetailModal({ unit, onClose }: { unit: Unit; onClose: () => 
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="card-surface"
+        className="card-surface animate-scale-in"
         style={{
           width: 'min(880px, 100%)',
           maxHeight: '92vh',

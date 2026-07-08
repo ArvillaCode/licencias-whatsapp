@@ -16,6 +16,7 @@ export function UnitFormModal({ onClose }: { onClose: () => void }) {
   return (
     <div
       onClick={onClose}
+      className="animate-backdrop-in"
       style={{
         position: 'fixed',
         inset: 0,
@@ -29,7 +30,7 @@ export function UnitFormModal({ onClose }: { onClose: () => void }) {
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="card-surface"
+        className="card-surface animate-scale-in"
         style={{ width: 380, padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.9rem' }}
       >
         <h2 style={{ margin: 0, fontSize: 'var(--font-size-lg)' }}>Nueva unidad</h2>

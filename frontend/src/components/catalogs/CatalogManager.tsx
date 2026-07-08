@@ -42,7 +42,7 @@ export function CatalogManager({
   const updateErrorMessage = errorMessage(updateError);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 520 }}>
+    <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 520 }}>
       <h1 style={{ margin: 0, fontSize: 'var(--font-size-2xl)' }}>{title}</h1>
 
       <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.6rem' }}>

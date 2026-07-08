@@ -8,3 +8,8 @@ backend/uploads/evidence/*
 backend/.env
 frontend/.env
 *.log
+
+# Artefactos locales de skills de Claude Code (no son parte de la app)
+.agents/
+.claude/skills/
+skills-lock.json
