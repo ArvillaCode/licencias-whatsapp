@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
+import { ah } from '../lib/asyncHandler';
 
 export const dashboardRouter = Router();
 
-dashboardRouter.get('/summary', async (req, res) => {
+dashboardRouter.get(
+  '/summary',
+  ah(async (req, res) => {
   const year = Number(req.query.year) || new Date().getFullYear();
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
@@ -76,4 +79,5 @@ dashboardRouter.get('/summary', async (req, res) => {
     expenseBreakdown,
     unitComparison,
   });
-});
+  })
+);

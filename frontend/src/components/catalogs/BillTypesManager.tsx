@@ -15,6 +15,8 @@ export function BillTypesManager() {
         onCreate={(name) => create.mutate(name)}
         onToggleActive={(item) => update.mutate({ id: item.id, input: { active: !item.active } })}
         onRename={(item, name) => update.mutate({ id: item.id, input: { name } })}
+        createError={create.error}
+        updateError={update.error}
       />
       <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', maxWidth: 520, marginTop: '0.75rem' }}>
         Al agregar un tipo nuevo se crea automáticamente ese recibo (vacío) en todas las unidades existentes.

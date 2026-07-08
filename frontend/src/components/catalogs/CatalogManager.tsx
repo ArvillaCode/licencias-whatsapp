@@ -2,6 +2,12 @@ import { useState, type FormEvent } from 'react';
 import type { CatalogItem } from '../../types/models';
 import { InlineEditable } from '../common/InlineEditable';
 
+function errorMessage(error: unknown): string | null {
+  if (!error) return null;
+  if (error instanceof Error) return error.message;
+  return 'Ocurrió un error inesperado.';
+}
+
 interface CatalogManagerProps {
   title: string;
   items: CatalogItem[] | undefined;
@@ -9,9 +15,20 @@ interface CatalogManagerProps {
   onCreate: (name: string) => void;
   onToggleActive: (item: CatalogItem) => void;
   onRename: (item: CatalogItem, name: string) => void;
+  createError?: unknown;
+  updateError?: unknown;
 }
 
-export function CatalogManager({ title, items, isLoading, onCreate, onToggleActive, onRename }: CatalogManagerProps) {
+export function CatalogManager({
+  title,
+  items,
+  isLoading,
+  onCreate,
+  onToggleActive,
+  onRename,
+  createError,
+  updateError,
+}: CatalogManagerProps) {
   const [newName, setNewName] = useState('');
 
   function handleCreate(e: FormEvent) {
@@ -20,6 +37,9 @@ export function CatalogManager({ title, items, isLoading, onCreate, onToggleActi
     onCreate(newName.trim());
     setNewName('');
   }
+
+  const createErrorMessage = errorMessage(createError);
+  const updateErrorMessage = errorMessage(updateError);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 520 }}>
@@ -37,6 +57,13 @@ export function CatalogManager({ title, items, isLoading, onCreate, onToggleActi
           + Agregar
         </button>
       </form>
+
+      {(createErrorMessage || updateErrorMessage) && (
+        <div style={{ color: 'var(--color-danger)', fontSize: 'var(--font-size-sm)' }}>
+          {createErrorMessage ?? updateErrorMessage}
+        </div>
+      )}
+
 
       {isLoading && <div style={{ color: 'var(--color-text-secondary)' }}>Cargando…</div>}
 

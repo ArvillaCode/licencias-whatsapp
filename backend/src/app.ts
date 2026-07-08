@@ -1,7 +1,8 @@
 import path from 'path';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import express from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { authRouter } from './routes/auth.routes';
 import { unitsRouter } from './routes/units.routes';
 import { billTypesRouter } from './routes/billTypes.routes';
@@ -41,6 +42,16 @@ export function createApp() {
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
     res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      res.status(409).json({ error: 'Ya existe un elemento con ese nombre.' });
+      return;
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   });
 
   return app;
