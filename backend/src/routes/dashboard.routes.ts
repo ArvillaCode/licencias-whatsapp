@@ -37,9 +37,13 @@ dashboardRouter.get(
     billTypeTotals.set(typeName, (billTypeTotals.get(typeName) ?? 0) + amount);
     unitTotals.set(unitLabel, (unitTotals.get(unitLabel) ?? 0) + amount);
 
-    const monthEntry = monthlyTrendMap.get(record.month) ?? {};
-    monthEntry[typeName] = (monthEntry[typeName] ?? 0) + amount;
-    monthlyTrendMap.set(record.month, monthEntry);
+    // Solo los meses con pago registrado aportan un punto a la tendencia: un mes sin
+    // registro es "sin dato" (hueco en la línea), no un pago de $0.
+    if (record.amountPaid != null) {
+      const monthEntry = monthlyTrendMap.get(record.month) ?? {};
+      monthEntry[typeName] = (monthEntry[typeName] ?? 0) + amount;
+      monthlyTrendMap.set(record.month, monthEntry);
+    }
 
     if (record.month === currentMonth && year === now.getFullYear()) {
       totalPaidThisMonth += amount;

@@ -21,7 +21,7 @@ export function ExpenseBreakdownChart({ data }: { data: Array<{ name: string; to
               innerRadius="55%"
               outerRadius="85%"
               paddingAngle={2}
-              label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+              label={({ name, percent }) => ((percent ?? 0) > 0.03 ? `${name} ${((percent ?? 0) * 100).toFixed(0)}%` : '')}
               labelLine={false}
               fontSize={11}
             >
