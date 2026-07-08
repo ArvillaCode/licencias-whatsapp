@@ -72,6 +72,8 @@
   function todayISO() { return new Date().toISOString().slice(0, 10); }
   function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
 
+  var editLicId = null;
+
   function renderLog(items) {
     const tb = $("logBody");
     if (!tb) return;
@@ -85,8 +87,9 @@
       else statusHtml = '<span style="color:#1b5e20">activa</span>';
       let actions = "";
       if (e.id) {
-        if (e.revoked) actions = '<button class="restoreBtn copy-btn" data-id="' + e.id + '">Restaurar</button>';
-        else actions = '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '">Revocar</button>';
+        actions = '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Editar</button> ';
+        if (e.revoked) actions += '<button class="restoreBtn copy-btn" data-id="' + e.id + '">Restaurar</button>';
+        else actions += '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '">Revocar</button>';
       }
       const tr = document.createElement("tr");
       tr.innerHTML =
@@ -106,6 +109,16 @@
     });
     document.querySelectorAll(".restoreBtn").forEach(function (b) {
       b.addEventListener("click", function () { restoreBackend(b.dataset.id); });
+    });
+    document.querySelectorAll(".editBtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        editLicId = b.dataset.id;
+        $("editLicInfo").textContent = "Editando: " + b.dataset.email;
+        $("editStart").value = b.dataset.start;
+        $("editEnd").value = b.dataset.end;
+        setStatus($("editStatus"), "Ajusta las fechas y guarda.", "info");
+        $("editModal").style.display = "flex";
+      });
     });
   }
 
@@ -205,6 +218,27 @@
     } else {
       setStatus($("verifyResult"), "INVÁLIDA: " + res.error + (res.payload ? " (" + res.payload.email + ")" : ""), "err");
     }
+  });
+
+  $("editCancelBtn").addEventListener("click", function () { $("editModal").style.display = "none"; });
+  $("editModal").addEventListener("click", function (e) { if (e.target === $("editModal")) $("editModal").style.display = "none"; });
+
+  $("editSaveBtn").addEventListener("click", async function () {
+    if (!editLicId) return;
+    const startStr = $("editStart").value;
+    const endStr = $("editEnd").value;
+    if (!startStr || !endStr) { setStatus($("editStatus"), "Completa ambas fechas.", "err"); return; }
+    setStatus($("editStatus"), "Re-emitiendo...", "info");
+    try {
+      const data = await __CEAuth.fetch("/admin/license/" + editLicId + "/reissue", {
+        method: "POST",
+        body: JSON.stringify({ startDate: startStr, endDate: endStr })
+      });
+      $("licenseOut").value = data.license || "";
+      $("editModal").style.display = "none";
+      refreshLog();
+      setStatus($("issueStatus"), "Licencia re-emitida con nuevas fechas. Copia y envía al cliente.", "ok");
+    } catch (e) { setStatus($("editStatus"), "Error: " + e.message, "err"); }
   });
 
   $("licStart").value = todayISO();

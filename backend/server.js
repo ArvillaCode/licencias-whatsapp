@@ -298,6 +298,27 @@ app.delete("/admin/license/:id", adminAuth, async function (req, res) {
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
 
+app.post("/admin/license/:id/reissue", adminAuth, async function (req, res) {
+  try {
+    const lic = (db.data.licenses || []).find(function (l) { return l.id === req.params.id; });
+    if (!lic) return res.status(404).json({ ok: false, error: "Licencia no encontrada" });
+    const { startDate, endDate } = req.body || {};
+    if (!startDate || !endDate) return res.status(400).json({ ok: false, error: "Faltan startDate o endDate" });
+    const startDateIso = new Date(startDate + "T00:00:00.000Z").toISOString();
+    const endDateIso = new Date(endDate + "T23:59:59.999Z").toISOString();
+    if (new Date(endDateIso) < new Date(startDateIso)) return res.status(400).json({ ok: false, error: "endDate debe ser posterior a startDate" });
+    await loadKeyPair();
+    const licenseKey = await buildSignedLicense(lic.email, lic.whatsapp, startDateIso, endDateIso);
+    lic.startDate = startDateIso;
+    lic.endDate = endDateIso;
+    lic.issuedAt = new Date().toISOString();
+    lic.licensePrefix = String(licenseKey).slice(0, 16);
+    lic.revoked = false;
+    await db.write();
+    res.json({ ok: true, license: licenseKey, licenseId: lic.id, payload: { email: lic.email, whatsapp: lic.whatsapp, startDate: startDateIso, endDate: endDateIso } });
+  } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
+});
+
 // ── 404 + error handler ──────────────────────────────────────────────────────
 app.use(function (req, res) { res.status(404).json({ error: "Endpoint no encontrado: " + req.method + " " + req.path }); });
 app.use(function (err, req, res, next) { console.error("[ERR]", err); res.status(500).json({ error: "Error interno del servidor" }); });
