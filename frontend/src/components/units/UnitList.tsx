@@ -2,87 +2,151 @@ import { DndContext, PointerSensor, KeyboardSensor, closestCenter, useSensor, us
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Unit } from '../../types/models';
-import { InlineEditable } from '../common/InlineEditable';
-import { useUpdateUnit, useDeleteUnit, useReorderUnits } from '../../hooks/useUnits';
+import { useReorderUnits } from '../../hooks/useUnits';
+import { useUnitEditor } from '../../hooks/useUnitEditor';
 
-function UnitRow({
-  unit,
-  onOpen,
-  onUpdate,
-  onDelete,
-}: {
-  unit: Unit;
-  onOpen: (unit: Unit) => void;
-  onUpdate: (id: number, input: { address?: string; apartmentNo?: string; tenantName?: string }) => void;
-  onDelete: (unit: Unit) => void;
-}) {
+function UnitRow({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: unit.id });
+  const editor = useUnitEditor(unit);
 
   return (
     <tr
       ref={setNodeRef}
-      onClick={() => onOpen(unit)}
+      onClick={() => !editor.isEditing && onOpen(unit)}
       style={{
         borderBottom: '1px solid var(--color-border)',
-        cursor: 'pointer',
+        cursor: editor.isEditing ? 'default' : 'pointer',
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
         position: isDragging ? 'relative' : undefined,
         zIndex: isDragging ? 10 : undefined,
-        background: 'var(--color-bg-elevated)',
+        background: editor.isEditing ? 'var(--color-accent-glow)' : 'var(--color-bg-elevated)',
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-hover)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-bg-elevated)')}
+      onMouseEnter={(e) => {
+        if (!editor.isEditing) e.currentTarget.style.background = 'var(--color-bg-hover)';
+      }}
+      onMouseLeave={(e) => {
+        if (!editor.isEditing) e.currentTarget.style.background = 'var(--color-bg-elevated)';
+      }}
     >
       <td style={{ padding: '0.6rem 0.4rem', width: 28 }}>
-        <button
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          title="Arrastrar para reordenar"
-          style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'grab', touchAction: 'none', lineHeight: 1 }}
-        >
-          ⠿
-        </button>
+        {!editor.isEditing && (
+          <button
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            title="Arrastrar para reordenar"
+            style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'grab', touchAction: 'none', lineHeight: 1 }}
+          >
+            ⠿
+          </button>
+        )}
       </td>
       <td style={{ padding: '0.6rem 1rem', maxWidth: 0 }}>
-        <InlineEditable
-          value={unit.address}
-          title={unit.address}
-          displayStyle={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-          onSave={(v) => onUpdate(unit.id, { address: v })}
-        />
+        {editor.isEditing ? (
+          <input
+            className="input"
+            value={editor.draft.address}
+            onChange={(e) => editor.setField('address', e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="Dirección"
+            style={{ width: '100%' }}
+          />
+        ) : (
+          <div title={unit.address} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {unit.address}
+          </div>
+        )}
       </td>
       <td style={{ padding: '0.6rem 1rem', fontWeight: 600 }}>
-        <InlineEditable value={unit.apartmentNo} onSave={(v) => onUpdate(unit.id, { apartmentNo: v })} />
+        {editor.isEditing ? (
+          <input
+            className="input"
+            value={editor.draft.apartmentNo}
+            onChange={(e) => editor.setField('apartmentNo', e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="# Apto"
+            style={{ width: '100%' }}
+          />
+        ) : (
+          unit.apartmentNo
+        )}
       </td>
       <td style={{ padding: '0.6rem 1rem' }}>
-        <InlineEditable
-          value={unit.tenantName ?? ''}
-          placeholder="Agregar inquilino"
-          onSave={(v) => onUpdate(unit.id, { tenantName: v })}
-        />
+        {editor.isEditing ? (
+          <input
+            className="input"
+            value={editor.draft.tenantName}
+            onChange={(e) => editor.setField('tenantName', e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="Nombre del inquilino"
+            style={{ width: '100%' }}
+          />
+        ) : (
+          <span style={{ color: unit.tenantName ? 'inherit' : 'var(--color-text-muted)' }}>
+            {unit.tenantName || 'Sin inquilino'}
+          </span>
+        )}
       </td>
-      <td style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>
-        <button
-          className="btn btn-danger"
-          style={{ padding: '0.3rem 0.5rem' }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(unit);
-          }}
-        >
-          🗑
-        </button>
+      <td style={{ padding: '0.6rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+        {editor.isEditing ? (
+          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+            <button
+              className="btn"
+              style={{ padding: '0.3rem 0.6rem' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                editor.cancelEdit();
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              className="btn btn-primary"
+              style={{ padding: '0.3rem 0.6rem' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                editor.save();
+              }}
+              disabled={editor.saving}
+            >
+              {editor.saving ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+            <button
+              className="btn"
+              style={{ padding: '0.3rem 0.5rem' }}
+              title="Editar unidad"
+              onClick={(e) => {
+                e.stopPropagation();
+                editor.startEdit();
+              }}
+            >
+              ✏️
+            </button>
+            <button
+              className="btn btn-danger"
+              style={{ padding: '0.3rem 0.5rem' }}
+              title="Eliminar unidad"
+              onClick={(e) => {
+                e.stopPropagation();
+                editor.remove();
+              }}
+              disabled={editor.deleting}
+            >
+              🗑
+            </button>
+          </div>
+        )}
       </td>
     </tr>
   );
 }
 
 export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit) => void }) {
-  const updateUnit = useUpdateUnit();
-  const deleteUnit = useDeleteUnit();
   const reorderUnits = useReorderUnits();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -103,10 +167,10 @@ export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
         <colgroup>
           <col style={{ width: 28 }} />
-          <col style={{ width: '44%' }} />
-          <col style={{ width: '16%' }} />
-          <col style={{ width: '24%' }} />
-          <col style={{ width: '12%' }} />
+          <col style={{ width: '40%' }} />
+          <col style={{ width: '14%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '14%' }} />
         </colgroup>
         <thead>
           <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
@@ -129,17 +193,7 @@ export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
           <SortableContext items={units.map((u) => u.id)} strategy={verticalListSortingStrategy}>
             <tbody>
               {units.map((unit) => (
-                <UnitRow
-                  key={unit.id}
-                  unit={unit}
-                  onOpen={onOpen}
-                  onUpdate={(id, input) => updateUnit.mutate({ id, input })}
-                  onDelete={(u) => {
-                    if (confirm(`¿Eliminar la unidad ${u.address} #${u.apartmentNo}?`)) {
-                      deleteUnit.mutate(u.id);
-                    }
-                  }}
-                />
+                <UnitRow key={unit.id} unit={unit} onOpen={onOpen} />
               ))}
             </tbody>
           </SortableContext>
