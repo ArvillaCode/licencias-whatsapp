@@ -126,6 +126,7 @@ app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",").map(s
 const adminDir = path.join(__dirname, "..", "public", "admin");
 app.use("/admin", express.static(adminDir));
 app.get("/admin", function (req, res) { res.redirect("/admin/admin.html"); });
+app.get("/", function (req, res) { res.redirect("/admin/login.html"); });
 
 // ── Public endpoints ────────────────────────────────────────────────
 app.get("/api/health", function (req, res) { res.json({ ok: true, t: Date.now() }); });
