@@ -8,16 +8,13 @@
     const token = window.__CEAuth.getToken();
     if (!token) { window.location.href = "login.html"; return; }
     try {
-      const res = await fetch("/admin/auth/me", {
-        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
-      });
-      const data = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+      const data = await window.__CEAuth.fetch("/admin/auth/me", { method: "GET" });
       $("userInfo").textContent = data.user ? data.user.username : "—";
       $("loadingScreen").style.display = "none";
       $("sidebar").style.display = "flex";
       $("adminContent").style.display = "block";
     } catch (e) {
+      console.error("Auth guard error:", e);
       window.__CEAuth.clearToken();
       window.location.href = "login.html";
     }
