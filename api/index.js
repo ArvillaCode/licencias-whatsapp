@@ -166,7 +166,7 @@ app.post("/api/license/check", async function (req, res) {
     let license = await db.findLicenseByPayload(p.email, p.whatsapp, p.startDate, p.endDate);
     if (!license) license = await db.findRevokedByEmail(p.email);
     if (!license) return res.status(404).json({ ok: false, error: "Licencia no registrada en el servidor" });
-    if (license.revoked) return res.json({ ok: false, error: "Licencia revocada", revoked: true });
+    if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada", revoked: true });
     res.json({ ok: true, payload: verifyRes.payload, daysLeft: verifyRes.daysLeft, licenseId: license.id, revoked: false });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
