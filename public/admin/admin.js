@@ -45,13 +45,13 @@
       else statusHtml = '<span style="color:#1b5e20">activa</span>';
       let actions = "";
       if (e.id) {
-        actions = '<button class="copyKeyBtn copy-btn" data-key="' + esc(e.licenseKey || "") + '">Copiar</button> ';
-        actions += '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Re-emitir</button> ';
-        actions += '<button class="renewBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-wa="' + esc(e.whatsapp) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Renovar</button> ';
-        if (e.revoked) actions += '<button class="restoreBtn copy-btn" data-id="' + e.id + '">Restaurar</button>';
-        else actions += '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '">Revocar</button>';
-        actions += '<button class="resetDeviceBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '">Resetear Dispositivo</button>';
-        actions += '<button class="deleteBtn copy-btn danger" data-id="' + e.id + '" data-email="' + esc(e.email) + '">Eliminar</button>';
+        actions = '<button class="copyKeyBtn copy-btn" data-key="' + esc(e.licenseKey || "") + '" title="Copiar clave">📋</button> ';
+        actions += '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '" title="Re-emitir">🔄</button> ';
+        actions += '<button class="renewBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-wa="' + esc(e.whatsapp) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '" title="Renovar">📅</button> ';
+        if (e.revoked) actions += '<button class="restoreBtn copy-btn" data-id="' + e.id + '" title="Restaurar">♻️</button>';
+        else actions += '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '" title="Revocar">🚫</button>';
+        actions += '<button class="resetDeviceBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" title="Resetear dispositivo">🔓</button>';
+        actions += '<button class="deleteBtn copy-btn danger" data-id="' + e.id + '" data-email="' + esc(e.email) + '" title="Eliminar">🗑️</button>';
       }
       const tr = document.createElement("tr");
       tr.innerHTML =
