@@ -36,13 +36,13 @@
     const tb = $("logBody");
     if (!tb) return;
     tb.innerHTML = "";
-    if (!items.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999">Sin licencias</td></tr>'; return; }
+    if (!items.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary)">Sin licencias</td></tr>'; return; }
     items.forEach(function (e, i) {
       const days = e.daysLeft != null ? e.daysLeft : Math.round((new Date(e.endDate) - new Date(e.startDate)) / 86400000);
       let statusHtml;
-      if (e.revoked) statusHtml = '<span style="color:#c62828;font-weight:600">REVOCADA</span>';
-      else if (e.expired || (new Date(e.endDate) < new Date())) statusHtml = '<span style="color:#999">expirada</span>';
-      else statusHtml = '<span style="color:#1b5e20">activa</span>';
+      if (e.revoked) statusHtml = '<span style="color:var(--error-text);font-weight:600">REVOCADA</span>';
+      else if (e.expired || (new Date(e.endDate) < new Date())) statusHtml = '<span style="color:var(--text-secondary)">expirada</span>';
+      else statusHtml = '<span style="color:var(--ok-text)">activa</span>';
       let actions = "";
       if (e.id) {
         actions = '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Editar</button> ';
