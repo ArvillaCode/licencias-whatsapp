@@ -3,5 +3,5 @@
 //   Ejemplos: "http://localhost:3000" (local), "https://tu-app.onrender.com" (Render).
 // - Déjalo a string vacío "" para usar SOLO el modo offline local (sin backend).
 window.__CE_CONFIG = {
-  BACKEND_URL: "http://localhost:3000"
+  BACKEND_URL: "https://licencias-whatsapp.vercel.app"
 };
