@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { ensureMonthlyRecordsForYear } from '../lib/billHelpers';
 import { ah } from '../lib/asyncHandler';
+import { requirePermission } from '../middleware/auth';
 
 export const monthlyRecordsRouter = Router();
+monthlyRecordsRouter.use(requirePermission('bills'));
 
 monthlyRecordsRouter.get(
   '/bills/:billId/monthly-records',

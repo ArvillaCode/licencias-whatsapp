@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { ah } from '../lib/asyncHandler';
+import { requirePermission } from '../middleware/auth';
 
 function buildCatalogRouter(model: 'paymentMethod' | 'responsible') {
   const router = Router();
   const db = () => (prisma[model] as any);
 
+  // La lectura queda disponible para cualquier usuario autenticado (el
+  // formulario de pagos necesita medios de pago y responsables). Las
+  // escrituras requieren el permiso de catálogos.
   router.get(
     '/',
     ah(async (_req, res) => {
@@ -16,6 +20,7 @@ function buildCatalogRouter(model: 'paymentMethod' | 'responsible') {
 
   router.post(
     '/',
+    requirePermission('catalogs'),
     ah(async (req, res) => {
       const { name } = req.body ?? {};
       if (!name) return res.status(400).json({ error: 'name es requerido' });
@@ -26,6 +31,7 @@ function buildCatalogRouter(model: 'paymentMethod' | 'responsible') {
 
   router.put(
     '/:id',
+    requirePermission('catalogs'),
     ah(async (req, res) => {
       const { name, active } = req.body ?? {};
       try {
@@ -39,6 +45,7 @@ function buildCatalogRouter(model: 'paymentMethod' | 'responsible') {
 
   router.delete(
     '/:id',
+    requirePermission('catalogs'),
     ah(async (req, res) => {
       try {
         await db().update({ where: { id: Number(req.params.id) }, data: { active: false } });

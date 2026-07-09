@@ -6,8 +6,10 @@ import { del, put } from '@vercel/blob';
 import { prisma } from '../lib/prisma';
 import { uploadEvidence, UPLOAD_ROOT } from '../middleware/upload';
 import { ah } from '../lib/asyncHandler';
+import { requirePermission } from '../middleware/auth';
 
 export const evidenceRouter = Router();
+evidenceRouter.use(requirePermission('bills'));
 
 const useBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 

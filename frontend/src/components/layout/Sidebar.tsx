@@ -103,7 +103,7 @@ export function Sidebar() {
         <ThemeToggle collapsed={sidebarCollapsed} />
         {!sidebarCollapsed && user && (
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', padding: '0 0.2rem' }}>
-            {user.username}
+            {user.email}
           </div>
         )}
         <button

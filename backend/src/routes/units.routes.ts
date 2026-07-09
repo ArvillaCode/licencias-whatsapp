@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { createBillsForUnit } from '../lib/billHelpers';
 import { ah } from '../lib/asyncHandler';
+import { requirePermission } from '../middleware/auth';
 
 export const unitsRouter = Router();
+unitsRouter.use(requirePermission('units'));
 
 unitsRouter.get(
   '/',

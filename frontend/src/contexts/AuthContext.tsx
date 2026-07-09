@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, type AuthUser } from '../api/auth';
 import { ApiError } from '../api/client';
+import type { PermissionKey } from '../lib/permissions';
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  isAdmin: boolean;
+  can: (permission: PermissionKey) => boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -23,8 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(username: string, password: string) {
-    const loggedUser = await authApi.login(username, password);
+  async function login(email: string, password: string) {
+    const loggedUser = await authApi.login(email, password);
     setUser(loggedUser);
   }
 
@@ -33,7 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  const isAdmin = user?.role === 'ADMIN';
+  const can = (permission: PermissionKey) => isAdmin || !!user?.permissions?.includes(permission);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, isAdmin, can, login, logout }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
