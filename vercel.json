@@ -4,7 +4,10 @@
     { "src": "api/index.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/api/index.js" }
+    { "src": "/admin/auth/(.*)", "dest": "/api/index.js" },
+    { "src": "/admin/licenses", "dest": "/api/index.js" },
+    { "src": "/admin/license/(.*)", "dest": "/api/index.js" },
+    { "src": "/api/(.*)", "dest": "/api/index.js" }
   ],
   "env": {
     "NODE_VERSION": "18.x"
