@@ -14,6 +14,7 @@ export interface BillType {
   name: string;
   order: number;
   active: boolean;
+  paymentUrl: string | null;
 }
 
 export interface Bill {
@@ -21,7 +22,7 @@ export interface Bill {
   unitId: number;
   billTypeId: number;
   billNumber: string | null;
-  dueDate: string | null;
+  dueDay: number | null;
   billType: BillType;
 }
 
@@ -55,10 +56,25 @@ export interface CatalogItem {
   active: boolean;
 }
 
+export interface Tenant {
+  id: number;
+  unitId: number;
+  name: string;
+  phone: string | null;
+  rentAmount: number | null;
+  rentDueDay: number | null;
+  contractStartDate: string | null;
+  moveOutDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  unit?: Unit;
+}
+
 export interface DashboardKpis {
   pendingCount: number;
   totalPaidThisMonth: number;
-  upcomingDueDates: Array<{ billId: number; unit: string; type: string; dueDate: string }>;
+  upcomingDueDates: Array<{ billId: number; unit: string; type: string; dueDay: number; nextDate: string }>;
 }
 
 export interface DashboardSummary {

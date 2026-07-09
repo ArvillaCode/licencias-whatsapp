@@ -10,7 +10,23 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecord; billId: number; year: number }) {
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function MonthDetailForm({
+  record,
+  billId,
+  year,
+  billTypeName,
+  defaultAmount,
+}: {
+  record: MonthlyRecord;
+  billId: number;
+  year: number;
+  billTypeName?: string;
+  defaultAmount?: number | null;
+}) {
   const updateRecord = useUpdateMonthlyRecord(billId, year);
   const uploadEvidence = useUploadEvidence(billId, year);
   const deleteEvidence = useDeleteEvidence(billId, year);
@@ -20,27 +36,29 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
 
   // El usuario (no admin) siempre queda como responsable con su propio nombre.
   const forcedResponsible = isAdmin ? null : user?.name ?? '';
+  // Confirmación rápida: si el mes no tiene fecha de pago, se propone hoy.
+  const suggestedAmount = billTypeName === 'Arriendo' && defaultAmount != null ? String(defaultAmount) : '';
 
-  const [paidAt, setPaidAt] = useState(record.paidAt ? record.paidAt.slice(0, 10) : '');
+  const [paidAt, setPaidAt] = useState(record.paidAt ? record.paidAt.slice(0, 10) : todayStr());
   const [responsible, setResponsible] = useState(forcedResponsible ?? record.responsible ?? '');
-  const [amountPaid, setAmountPaid] = useState(record.amountPaid?.toString() ?? '');
+  const [amountPaid, setAmountPaid] = useState(record.amountPaid?.toString() ?? suggestedAmount);
   const [paymentMethod, setPaymentMethod] = useState(record.paymentMethod ?? '');
   const [justSaved, setJustSaved] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPaidAt(record.paidAt ? record.paidAt.slice(0, 10) : '');
+    setPaidAt(record.paidAt ? record.paidAt.slice(0, 10) : todayStr());
     setResponsible(forcedResponsible ?? record.responsible ?? '');
-    setAmountPaid(record.amountPaid?.toString() ?? '');
+    setAmountPaid(record.amountPaid?.toString() ?? suggestedAmount);
     setPaymentMethod(record.paymentMethod ?? '');
     setJustSaved(false);
     setValidationError(null);
   }, [record.id]);
 
   const dirty =
-    paidAt !== (record.paidAt ? record.paidAt.slice(0, 10) : '') ||
-    responsible !== (record.responsible ?? '') ||
-    amountPaid !== (record.amountPaid?.toString() ?? '') ||
+    paidAt !== (record.paidAt ? record.paidAt.slice(0, 10) : todayStr()) ||
+    responsible !== (forcedResponsible ?? record.responsible ?? '') ||
+    amountPaid !== (record.amountPaid?.toString() ?? suggestedAmount) ||
     paymentMethod !== (record.paymentMethod ?? '');
 
   function handleSave() {

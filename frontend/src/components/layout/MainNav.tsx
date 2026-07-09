@@ -7,6 +7,7 @@ export function MainNav({ collapsed }: { collapsed: boolean }) {
   const items = [
     { to: '/', label: 'Dashboard', icon: '📊', end: true, show: true },
     { to: '/unidades', label: 'Unidades', icon: '🏢', end: false, show: true },
+    { to: '/inquilinos', label: 'Inquilinos', icon: '🏠', end: false, show: isAdmin },
     { to: '/usuarios', label: 'Usuarios', icon: '👤', end: false, show: isAdmin },
   ].filter((item) => item.show);
 

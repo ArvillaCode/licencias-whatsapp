@@ -3,6 +3,8 @@ import { InlineEditable } from '../common/InlineEditable';
 import { useUpdateBill } from '../../hooks/useBills';
 import { useAuth } from '../../contexts/AuthContext';
 
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+
 export function BillHeaderForm({ bill, unitId }: { bill: Bill; unitId: number }) {
   const updateBill = useUpdateBill(unitId);
   const { isAdmin } = useAuth();
@@ -37,16 +39,24 @@ export function BillHeaderForm({ bill, unitId }: { bill: Bill; unitId: number })
         )}
       </div>
       <div>
-        {label('Fecha máxima de pago')}
+        {label('Vence cada mes')}
         {isAdmin ? (
-          <input
-            type="date"
+          <select
             className="input"
-            value={bill.dueDate ? bill.dueDate.slice(0, 10) : ''}
-            onChange={(e) => updateBill.mutate({ id: bill.id, input: { dueDate: e.target.value || null } })}
-          />
+            value={bill.dueDay ?? ''}
+            onChange={(e) =>
+              updateBill.mutate({ id: bill.id, input: { dueDay: e.target.value ? Number(e.target.value) : null } })
+            }
+          >
+            <option value="">Sin definir</option>
+            {DAYS.map((d) => (
+              <option key={d} value={d}>
+                Día {d}
+              </option>
+            ))}
+          </select>
         ) : (
-          <div style={{ fontWeight: 600 }}>{bill.dueDate ? bill.dueDate.slice(0, 10) : '—'}</div>
+          <div style={{ fontWeight: 600 }}>{bill.dueDay ? `Día ${bill.dueDay}` : '—'}</div>
         )}
       </div>
     </div>

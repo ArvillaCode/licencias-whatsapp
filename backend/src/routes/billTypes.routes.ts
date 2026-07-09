@@ -18,11 +18,11 @@ billTypesRouter.post(
   '/',
   requireAdmin,
   ah(async (req, res) => {
-    const { name, order } = req.body ?? {};
+    const { name, order, paymentUrl } = req.body ?? {};
     if (!name) return res.status(400).json({ error: 'name es requerido' });
     const count = await prisma.billType.count();
     const billType = await prisma.billType.create({
-      data: { name, order: order ?? count },
+      data: { name, order: order ?? count, paymentUrl: paymentUrl || null },
     });
     await backfillBillForNewType(prisma, billType.id, new Date().getFullYear());
     res.status(201).json(billType);
@@ -33,11 +33,11 @@ billTypesRouter.put(
   '/:id',
   requireAdmin,
   ah(async (req, res) => {
-    const { name, order, active } = req.body ?? {};
+    const { name, order, active, paymentUrl } = req.body ?? {};
     try {
       const billType = await prisma.billType.update({
         where: { id: Number(req.params.id) },
-        data: { name, order, active },
+        data: { name, order, active, paymentUrl: paymentUrl === undefined ? undefined : paymentUrl || null },
       });
       res.json(billType);
     } catch {

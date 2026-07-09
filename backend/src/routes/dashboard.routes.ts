@@ -8,6 +8,21 @@ export const dashboardRouter = Router();
 // llenaron a propósito y no deben contar como "pendientes".
 const PENDING_TRACKING_START = { year: 2026, month: 7 };
 
+/** Próxima ocurrencia de un día fijo del mes (1-31), con clamp al último día del mes. */
+function nextDueDate(dueDay: number, from: Date): Date {
+  let year = from.getFullYear();
+  let monthIndex = from.getMonth();
+  if (from.getDate() > dueDay) {
+    monthIndex += 1;
+    if (monthIndex > 11) {
+      monthIndex = 0;
+      year += 1;
+    }
+  }
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  return new Date(year, monthIndex, Math.min(dueDay, daysInMonth));
+}
+
 dashboardRouter.get(
   '/summary',
   ah(async (req, res) => {
@@ -59,12 +74,14 @@ dashboardRouter.get(
     }
   }
 
-  const upcomingDueDates = await prisma.bill.findMany({
-    where: { dueDate: { not: null }, billType: { active: true } },
+  const billsWithDueDay = await prisma.bill.findMany({
+    where: { dueDay: { not: null }, billType: { active: true } },
     include: { billType: true, unit: true },
-    orderBy: { dueDate: 'asc' },
-    take: 5,
   });
+  const upcomingDueDates = billsWithDueDay
+    .map((b) => ({ bill: b, nextDate: nextDueDate(b.dueDay as number, now) }))
+    .sort((a, b) => a.nextDate.getTime() - b.nextDate.getTime())
+    .slice(0, 5);
 
   const monthlyTrend = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
@@ -79,11 +96,12 @@ dashboardRouter.get(
     kpis: {
       pendingCount,
       totalPaidThisMonth,
-      upcomingDueDates: upcomingDueDates.map((b) => ({
-        billId: b.id,
-        unit: b.unit.name || `${b.unit.address} #${b.unit.apartmentNo}`,
-        type: b.billType.name,
-        dueDate: b.dueDate,
+      upcomingDueDates: upcomingDueDates.map(({ bill, nextDate }) => ({
+        billId: bill.id,
+        unit: bill.unit.name || `${bill.unit.address} #${bill.unit.apartmentNo}`,
+        type: bill.billType.name,
+        dueDay: bill.dueDay,
+        nextDate,
       })),
     },
     monthlyTrend,

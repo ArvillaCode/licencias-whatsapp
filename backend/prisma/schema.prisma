@@ -30,14 +30,16 @@ model Unit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   bills       Bill[]
+  tenants     Tenant[]
 }
 
 model BillType {
-  id     Int     @id @default(autoincrement())
-  name   String  @unique
-  order  Int     @default(0)
-  active Boolean @default(true)
-  bills  Bill[]
+  id         Int     @id @default(autoincrement())
+  name       String  @unique
+  order      Int     @default(0)
+  active     Boolean @default(true)
+  paymentUrl String?
+  bills      Bill[]
 }
 
 model Bill {
@@ -48,11 +50,27 @@ model Bill {
   billType       BillType        @relation(fields: [billTypeId], references: [id])
   billNumber     String?
   dueDate        DateTime?
+  dueDay         Int?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   monthlyRecords MonthlyRecord[]
 
   @@unique([unitId, billTypeId])
+}
+
+model Tenant {
+  id                Int       @id @default(autoincrement())
+  unitId            Int
+  unit              Unit      @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  name              String
+  phone             String?
+  rentAmount        Float?
+  rentDueDay        Int?
+  contractStartDate DateTime?
+  moveOutDate       DateTime?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model MonthlyRecord {

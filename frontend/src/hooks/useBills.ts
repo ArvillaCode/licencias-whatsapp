@@ -8,7 +8,7 @@ export function useBillsForUnit(unitId: number) {
 export function useUpdateBill(unitId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: { billNumber?: string | null; dueDate?: string | null } }) =>
+    mutationFn: ({ id, input }: { id: number; input: { billNumber?: string | null; dueDay?: number | null } }) =>
       billsApi.update(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['bills', unitId] }),
   });
@@ -31,7 +31,7 @@ export function useCreateBillType() {
 export function useUpdateBillType() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: { name?: string; active?: boolean; order?: number } }) =>
+    mutationFn: ({ id, input }: { id: number; input: { name?: string; active?: boolean; order?: number; paymentUrl?: string | null } }) =>
       billTypesApi.update(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: BILL_TYPES_KEY }),
   });

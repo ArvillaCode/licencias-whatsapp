@@ -9,6 +9,7 @@ import { BillTypesManager } from './components/catalogs/BillTypesManager';
 import { PaymentMethodsManager } from './components/catalogs/PaymentMethodsManager';
 import { ResponsiblesManager } from './components/catalogs/ResponsiblesManager';
 import { UsersManager } from './components/users/UsersManager';
+import { TenantsManager } from './components/tenants/TenantsManager';
 
 function App() {
   return (
@@ -51,6 +52,14 @@ function App() {
                   element={
                     <RequireAdmin>
                       <UsersManager />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="/inquilinos"
+                  element={
+                    <RequireAdmin>
+                      <TenantsManager />
                     </RequireAdmin>
                   }
                 />

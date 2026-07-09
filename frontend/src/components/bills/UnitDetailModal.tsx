@@ -86,7 +86,7 @@ export function UnitDetailModal({ unit, onClose }: { unit: Unit; onClose: () => 
           </div>
         )}
 
-        {activeBill && <BillTab bill={activeBill} unitId={unit.id} />}
+        {activeBill && <BillTab bill={activeBill} unit={unit} />}
       </div>
     </div>
   );

@@ -39,3 +39,16 @@ export async function backfillBillForNewType(db: PrismaClient, billTypeId: numbe
     await ensureMonthlyRecordsForYear(db, bill.id, year);
   }
 }
+
+/**
+ * El día de pago del arriendo (dato del inquilino) fija el vencimiento del
+ * recibo "Arriendo" de su unidad, para no tener que configurarlo aparte.
+ */
+export async function syncArriendoDueDay(db: PrismaClient, unitId: number, dueDay: number | null) {
+  const arriendoType = await db.billType.findFirst({ where: { name: 'Arriendo' } });
+  if (!arriendoType) return;
+  await db.bill.updateMany({
+    where: { unitId, billTypeId: arriendoType.id },
+    data: { dueDay },
+  });
+}

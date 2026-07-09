@@ -62,7 +62,9 @@ export function DashboardView() {
                 {data.kpis.upcomingDueDates.map((d) => (
                   <div key={d.billId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
                     <span>{d.unit} — {d.type}</span>
-                    <span style={{ color: 'var(--color-text-secondary)' }}>{new Date(d.dueDate).toLocaleDateString()}</span>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>
+                      {new Date(d.nextDate).toLocaleDateString()} (día {d.dueDay})
+                    </span>
                   </div>
                 ))}
               </div>

@@ -33,11 +33,17 @@ billsRouter.put(
   '/bills/:id',
   requireAdmin,
   ah(async (req, res) => {
-    const { billNumber, dueDate } = req.body ?? {};
+    const { billNumber, dueDay } = req.body ?? {};
+    if (dueDay !== undefined && dueDay !== null) {
+      const n = Number(dueDay);
+      if (!Number.isInteger(n) || n < 1 || n > 31) {
+        return res.status(400).json({ error: 'El día de vencimiento debe estar entre 1 y 31' });
+      }
+    }
     try {
       const bill = await prisma.bill.update({
         where: { id: Number(req.params.id) },
-        data: { billNumber, dueDate: dueDate ? new Date(dueDate) : null },
+        data: { billNumber, dueDay: dueDay === undefined ? undefined : dueDay === null ? null : Number(dueDay) },
       });
       res.json(bill);
     } catch {
