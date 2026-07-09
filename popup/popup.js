@@ -73,15 +73,13 @@
           const phoneRes = await new Promise(function (r) {
             chrome.tabs.sendMessage(tab.id, { cmd: "getMyPhone" }, function (resp) { r(resp || {}); });
           });
-          if (!phoneRes || !phoneRes.phone) {
-            showLicenseGate("No se pudo verificar tu número de WhatsApp. Asegúrate de tener WhatsApp Web abierto e iniciado. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20extensión%20no%20detecta%20mi%20número' target='_blank'>Ayuda</a>");
-            return;
-          }
-          const licPhone = (data.payload && data.payload.whatsapp || stored.payload.whatsapp || "").replace(/[^0-9]/g, "");
-          const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
-          if (licPhone !== waPhone) {
-            showLicenseGate("Esta licencia es para otro número de WhatsApp. <a href='https://wa.me/573218101385' target='_blank'>Solicita una licencia para tu número aquí</a>.");
-            return;
+          if (phoneRes && phoneRes.phone) {
+            const licPhone = (data.payload && data.payload.whatsapp || stored.payload.whatsapp || "").replace(/[^0-9]/g, "");
+            const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
+            if (licPhone !== waPhone) {
+              showLicenseGate("Esta licencia es para otro número de WhatsApp. <a href='https://wa.me/573218101385' target='_blank'>Solicita una licencia para tu número aquí</a>.");
+              return;
+            }
           }
         }
         await new Promise(function (r) { chrome.storage.local.set({ ce_active_license: { license: stored.license, payload: data.payload || stored.payload, daysLeft: data.daysLeft, licenseId: data.licenseId, checkedAt: Date.now() } }, r); });
@@ -148,19 +146,15 @@
         const phoneRes = await new Promise(function (r) {
           chrome.tabs.sendMessage(tab.id, { cmd: "getMyPhone" }, function (resp) { r(resp || {}); });
         });
-        if (!phoneRes || !phoneRes.phone) {
-          el.className = "status error";
-          el.innerHTML = "No se pudo verificar tu número de WhatsApp. Asegúrate de tener WhatsApp Web abierto. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20extensión%20no%20detecta%20mi%20número' target='_blank'>Ayuda</a>";
-          await window.__CELicense.clear();
-          return;
-        }
-        const licPhone = (res.payload.whatsapp || "").replace(/[^0-9]/g, "");
-        const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
-        if (licPhone !== waPhone) {
-          el.className = "status error";
-          el.innerHTML = "Esta licencia es para otro número. <a href='https://wa.me/573218101385' target='_blank'>Solicita una para tu número</a>.";
-          await window.__CELicense.clear();
-          return;
+        if (phoneRes && phoneRes.phone) {
+          const licPhone = (res.payload.whatsapp || "").replace(/[^0-9]/g, "");
+          const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
+          if (licPhone !== waPhone) {
+            el.className = "status error";
+            el.innerHTML = "Esta licencia es para otro número. <a href='https://wa.me/573218101385' target='_blank'>Solicita una para tu número</a>.";
+            await window.__CELicense.clear();
+            return;
+          }
         }
       }
       el.className = "status"; el.textContent = "";
