@@ -29,6 +29,7 @@
   function showMainApp() {
     $("licenseGate").classList.add("hidden");
     $("mainApp").classList.remove("hidden");
+    startPeriodicCheck();
   }
 
   async function refreshLicenseInfo() {
@@ -94,6 +95,42 @@
     } catch (e) {
       showLicenseGate("¿No tienes licencia? <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Actívala aquí</a>");
     }
+  }
+
+  async function revalidateLicense() {
+    try {
+      const stored = await new Promise(function (r) { chrome.storage.local.get("ce_active_license", function (o) { r(o && o.ce_active_license); }); });
+      if (!stored || !stored.license) return false;
+      const res = await fetch("https://dashboard-licence.upfunnel.click/api/license/activate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ license: stored.license })
+      });
+      const data = await res.json();
+      if (res.ok && data && data.ok) return true;
+      chrome.storage.local.remove("ce_active_license", function () {});
+      return false;
+    } catch (e) { return true; }
+  }
+
+  async function enforceLicense(actionLabel) {
+    const ok = await revalidateLicense();
+    if (!ok) {
+      showLicenseGate("Tu licencia ya no es válida. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Actívala aquí</a>.");
+      return false;
+    }
+    return true;
+  }
+
+  let _periodicInterval = null;
+  function startPeriodicCheck() {
+    if (_periodicInterval) clearInterval(_periodicInterval);
+    _periodicInterval = setInterval(async function () {
+      const ok = await revalidateLicense();
+      if (!ok) {
+        clearInterval(_periodicInterval);
+        showLicenseGate("Tu licencia fue revocada. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20fue%20revocada' target='_blank'>Contacta al administrador</a>.");
+      }
+    }, 60000);
   }
 
   $("activateBtn").addEventListener("click", async function () {
@@ -455,7 +492,8 @@
     applyState(changes.extractState.newValue);
   });
 
-  $("extractBtn").addEventListener("click", function () {
+  $("extractBtn").addEventListener("click", async function () {
+    if (!(await enforceLicense("extraer"))) return;
     const groupId = $("groupSelect").value;
     if (!groupId) { setStatus("Selecciona un grupo.", true); return; }
     lastGroupName = $("groupSelect").options[$("groupSelect").selectedIndex].textContent;
@@ -471,7 +509,8 @@
     });
   });
 
-  $("refreshBtn").addEventListener("click", function () {
+  $("refreshBtn").addEventListener("click", async function () {
+    if (!(await enforceLicense("recargar"))) return;
     if (!connected) return init();
     loadGroups();
   });
@@ -480,7 +519,8 @@
     loadStats($("groupSelect").value);
   });
 
-  $("reconnectBtn").addEventListener("click", function () {
+  $("reconnectBtn").addEventListener("click", async function () {
+    if (!(await enforceLicense("reconectar"))) return;
     const btn = $("reconnectBtn");
     btn.disabled = true;
     btn.classList.add("spinning");
