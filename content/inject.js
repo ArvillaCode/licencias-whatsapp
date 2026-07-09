@@ -305,6 +305,35 @@
     } catch (e) { return null; }
   }
 
+  function getMyPhone() {
+    try {
+      const cols = getCollections();
+      const User = tryRequire("WAWebUser");
+      if (User && User.getMe) {
+        const me = User.getMe();
+        if (me && me.id) return toPhoneFromWid(me.id);
+      }
+      if (User && User.getActiveWid) {
+        const wid = User.getActiveWid();
+        if (wid) return toPhoneFromWid(wid);
+      }
+      const wf = getWidFactory();
+      const cols2 = getCollections();
+      const Contact = cols2.Contact;
+      if (Contact && Contact.getMe) {
+        const me = Contact.getMe();
+        if (me && me.id) return toPhoneFromWid(me.id);
+      }
+      const chat = safeCall(function () {
+        const c = cols.Chat;
+        if (!c || !c.getModelsArray) return null;
+        return c.getModelsArray().find(function (ch) { return ch.isUser && ch.isUser(); });
+      }, null);
+      if (chat && chat.id) return toPhoneFromWid(chat.id);
+      return null;
+    } catch (e) { LOG("getMyPhone error:", e.message); return null; }
+  }
+
   function isReady() { return ready; }
 
   async function getStats(groupId) {
@@ -338,6 +367,7 @@
         case "resolveContact": return await resolveContact(msg.participantId);
         case "getAbout": return { about: await getAbout(msg.participantId) };
         case "toPhone": return { phone: toPhoneFromWid(msg.participantId) };
+        case "getMyPhone": return { phone: getMyPhone() };
         default: throw new Error("Tipo desconocido: " + msg.type);
       }
     } catch (e) {

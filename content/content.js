@@ -284,6 +284,16 @@
       reply(sendResponse, { ok: resumeExtract() });
       return false;
     }
+    if (cmd === "getMyPhone") {
+      Promise.resolve().then(async function () {
+        try {
+          if (!readyState) await waitForReady();
+          const res = await sendToInject("getMyPhone", {}, 10000);
+          reply(sendResponse, { phone: (res && res.phone) || null });
+        } catch (e) { reply(sendResponse, { phone: null, error: String(e && e.message || e) }); }
+      });
+      return true;
+    }
     if (cmd === "reset") {
       extracting = false;
       paused = false;
