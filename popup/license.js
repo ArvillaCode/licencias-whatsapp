@@ -124,13 +124,13 @@
     } catch (e) { return { ok: false, error: "No se pudo conectar al backend: " + (e.message || e) }; }
   }
 
-  async function checkStoredLicense() {
+  async function checkStoredLicense(forceBackend) {
     const stored = await getStoredLicense();
     if (!stored || !stored.license) return { valid: false, reason: "sin licencia" };
     const localRes = await verifyLicenseRaw(stored.license);
     if (!localRes.ok) return { valid: false, reason: localRes.error, expired: localRes.expired, payload: localRes.payload };
     const lastCheck = await getLastCheck();
-    if (backendEnabled() && Date.now() - lastCheck > CHECK_INTERVAL_MS) {
+    if (backendEnabled() && (forceBackend || Date.now() - lastCheck > CHECK_INTERVAL_MS)) {
       setLastCheck(Date.now());
       const backendRes = await checkLicenseBackend(stored.license, localRes.payload);
       if (backendRes) {
@@ -165,7 +165,7 @@
 
   window.__CELicense = {
     verify: verifyLicenseRaw,
-    checkStored: checkStoredLicense,
+    checkStored: function (force) { return checkStoredLicense(force); },
     activate: activateLicense,
     clear: clearStoredLicense,
     fetchPubKey: fetchAndCachePubKey,
