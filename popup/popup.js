@@ -15,6 +15,7 @@
   function showLicenseGate(reasonMsg) {
     $("licenseGate").classList.remove("hidden");
     $("mainApp").classList.add("hidden");
+    $("licenseActive").classList.add("hidden");
     const el = $("licenseStatus");
     if (reasonMsg) {
       el.className = "status error";
@@ -24,11 +25,11 @@
       el.innerHTML = "";
     }
     $("licenseHintMsg").classList.remove("hidden");
-    refreshLicenseInfo();
   }
   function showMainApp() {
     $("licenseGate").classList.add("hidden");
     $("mainApp").classList.remove("hidden");
+    refreshLicenseInfo();
   }
 
   async function refreshLicenseInfo() {

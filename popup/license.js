@@ -135,6 +135,7 @@
       const backendRes = await checkLicenseBackend(stored.license, localRes.payload, stored.licenseId);
       if (backendRes) {
         if (!backendRes.ok) {
+          await clearStoredLicense();
           if (backendRes.revoked) return { valid: false, reason: "Licencia revocada por el administrador", revoked: true, payload: localRes.payload };
           if (backendRes.expired) return { valid: false, reason: backendRes.error, expired: true, payload: localRes.payload };
           return { valid: false, reason: backendRes.error || "Licencia no válida en el servidor", payload: localRes.payload };
