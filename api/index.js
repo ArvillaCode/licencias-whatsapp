@@ -3,6 +3,7 @@
 const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
+const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const { nanoid } = require("nanoid");
@@ -22,26 +23,25 @@ let keyPair = null;
 async function loadKeyPair() {
   if (keyPair) return keyPair;
   const KEY_FILE = path.join("/tmp", "private-key.json");
-  const fs = require("fs");
   if (fs.existsSync(KEY_FILE)) {
     const raw = JSON.parse(fs.readFileSync(KEY_FILE, "utf8"));
     keyPair = {
-      privateKey: await crypto.subtle.importKey("jwk", raw.privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
-      publicKey: await crypto.subtle.importKey("jwk", raw.publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
+      privateKey: await crypto.webcrypto.subtle.importKey("jwk", raw.privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
+      publicKey: await crypto.webcrypto.subtle.importKey("jwk", raw.publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
       publicJwk: raw.publicJwk, privateJwk: raw.privateJwk,
     };
     return keyPair;
   }
-  const kp = await crypto.subtle.generateKey(
+  const kp = await crypto.webcrypto.subtle.generateKey(
     { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
     true, ["sign", "verify"]
   );
-  const privateJwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
-  const publicJwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
+  const privateJwk = await crypto.webcrypto.subtle.exportKey("jwk", kp.privateKey);
+  const publicJwk = await crypto.webcrypto.subtle.exportKey("jwk", kp.publicKey);
   fs.writeFileSync(KEY_FILE, JSON.stringify({ privateJwk, publicJwk }, null, 2));
   keyPair = {
-    privateKey: await crypto.subtle.importKey("jwk", privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
-    publicKey: await crypto.subtle.importKey("jwk", publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
+    privateKey: await crypto.webcrypto.subtle.importKey("jwk", privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
+    publicKey: await crypto.webcrypto.subtle.importKey("jwk", publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
     publicJwk, privateJwk,
   };
   return keyPair;
@@ -77,7 +77,7 @@ function b64urlToBytes(s) {
 async function buildSignedLicense(email, wa, startDateIso, endDateIso) {
   const payload = { email: (email || "").trim(), whatsapp: (wa || "").trim(), startDate: startDateIso, endDate: endDateIso, issued: new Date().toISOString() };
   const data = new TextEncoder().encode(JSON.stringify(payload));
-  const sig = await crypto.subtle.sign({ name: "RSASSA-PKCS1-v1_5" }, keyPair.privateKey, data);
+  const sig = await crypto.webcrypto.subtle.sign({ name: "RSASSA-PKCS1-v1_5" }, keyPair.privateKey, data);
   const licenseObj = { p: payload, s: bytesToB64url(sig) };
   return Buffer.from(new TextEncoder().encode(JSON.stringify(licenseObj))).toString("base64url");
 }
@@ -89,7 +89,7 @@ async function verifyLicenseRaw(licenseKey) {
     const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
     if (!json.p || !json.s) return { ok: false, error: "Formato inválido" };
     const sig = b64urlToBytes(json.s);
-    const valid = await crypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, keyPair.publicKey, sig, new TextEncoder().encode(JSON.stringify(json.p)));
+    const valid = await crypto.webcrypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, keyPair.publicKey, sig, new TextEncoder().encode(JSON.stringify(json.p)));
     if (!valid) return { ok: false, error: "Firma inválida" };
     const now = new Date(), start = new Date(json.p.startDate), end = new Date(json.p.endDate);
     if (now < start) return { ok: false, error: "Aún no vigente (inicio " + start.toISOString().slice(0, 10) + ")", payload: json.p };
@@ -286,8 +286,8 @@ app.use(function (req, res) { res.status(404).json({ error: "Endpoint no encontr
 app.use(function (err, req, res, next) { console.error("[ERR]", err); res.status(500).json({ error: "Error interno del servidor" }); });
 
 // ── Warm up key pair on first request ───────────────────────────────
-app.use(async function (req, res, next) {
-  if (!keyPair) { try { await loadKeyPair(); } catch (e) {} }
+app.use(function (req, res, next) {
+  if (!keyPair) { loadKeyPair().catch(function (e) { console.error("[WARM]", e); }); }
   next();
 });
 
