@@ -74,7 +74,7 @@
       init();
     } else {
       el.className = "status error";
-      el.textContent = res.error || "Licencia inválida";
+      el.innerHTML = res.error || "Licencia inválida";
     }
   });
 

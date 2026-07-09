@@ -67,7 +67,7 @@
       const sig = b64urlToBytes(json.s);
       const pub = await crypto.subtle.importKey("jwk", pubJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
       const valid = await crypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, pub, sig, data);
-      if (!valid) return { ok: false, error: "Firma inválida (falsa o alterada)" };
+      if (!valid) return { ok: false, error: "Firma inválida. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20clave%20no%20funciona' target='_blank'>Solicita una nueva clave aquí</a>" };
       const now = new Date();
       const start = new Date(json.p.startDate);
       const end = new Date(json.p.endDate);
