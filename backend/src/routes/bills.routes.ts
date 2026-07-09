@@ -4,10 +4,10 @@ import { ah } from '../lib/asyncHandler';
 import { requirePermission } from '../middleware/auth';
 
 export const billsRouter = Router();
-billsRouter.use(requirePermission('bills'));
 
 billsRouter.get(
   '/units/:unitId/bills',
+  requirePermission('bills'),
   ah(async (req, res) => {
     const bills = await prisma.bill.findMany({
       where: { unitId: Number(req.params.unitId), billType: { active: true } },
@@ -20,6 +20,7 @@ billsRouter.get(
 
 billsRouter.get(
   '/bills/:id',
+  requirePermission('bills'),
   ah(async (req, res) => {
     const bill = await prisma.bill.findUnique({
       where: { id: Number(req.params.id) },
@@ -32,6 +33,7 @@ billsRouter.get(
 
 billsRouter.put(
   '/bills/:id',
+  requirePermission('bills'),
   ah(async (req, res) => {
     const { billNumber, dueDate } = req.body ?? {};
     try {
