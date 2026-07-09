@@ -7,8 +7,9 @@
   let lastGroupName = "";
   let connected = false;
 
-  chrome.storage.local.get({ includeAbout: true, format: "csv" }, function (cfg) {
+  chrome.storage.local.get({ includeAbout: true, format: "csv", phoneOnly: true }, function (cfg) {
     $("aboutCheck").checked = !!cfg.includeAbout;
+    $("phoneOnlyCheck").checked = !!cfg.phoneOnly;
     $("formatSelect").value = cfg.format || "csv";
   });
 
@@ -392,9 +393,11 @@
     setBusy(false);
     $("progress").classList.add("hidden");
     rows = r || [];
+    const phoneOnly = $("phoneOnlyCheck").checked;
+    const filtered = phoneOnly ? rows.filter(function (row) { return !!row.phone; }) : rows;
     const tbody = $("tbody");
     tbody.innerHTML = "";
-    rows.forEach(function (row, i) {
+    filtered.forEach(function (row, i) {
       const tr = document.createElement("tr");
       tr.innerHTML =
         "<td>" + (i + 1) + "</td>" +
@@ -406,7 +409,7 @@
         "<td>" + esc(row.about) + "</td>";
       tbody.appendChild(tr);
     });
-    $("resultsCount").textContent = rows.length + " contactos";
+    $("resultsCount").textContent = filtered.length + " contactos" + (phoneOnly ? " con teléfono" : "") + " de " + rows.length + " totales";
     $("results").classList.remove("hidden");
   }
 
@@ -435,11 +438,12 @@
 
   function downloadExport() {
     const fmt = $("formatSelect").value || "csv";
-    chrome.storage.local.set({ format: fmt });
-    if (rows.length === 0) { setStatus("No hay contactos para descargar.", true); return; }
-    if (fmt === "csv") exportCSV();
-    else if (fmt === "json") exportJSON();
-    else if (fmt === "xlsx") exportXLSX();
+    chrome.storage.local.set({ format: fmt, phoneOnly: $("phoneOnlyCheck").checked });
+    const exportRows = $("phoneOnlyCheck").checked ? rows.filter(function (r) { return !!r.phone; }) : rows;
+    if (exportRows.length === 0) { setStatus("No hay contactos para descargar.", true); return; }
+    if (fmt === "csv") exportCSV(exportRows);
+    else if (fmt === "json") exportJSON(exportRows);
+    else if (fmt === "xlsx") exportXLSX(exportRows);
     resetAfterDownload();
   }
 
@@ -456,10 +460,10 @@
     setStatus("Descarga completa. Listo para una nueva extracción.");
   }
 
-  function exportCSV() {
+  function exportCSV(data) {
     const header = ["Nombre", "Pushname", "Telefono", "LID", "Rol", "Acerca de"];
     const lines = [header.map(csvCell).join(",")];
-    rows.forEach(function (r) {
+    (data || rows).forEach(function (r) {
       lines.push([r.name, r.pushname, r.phone, r.lid, r.role, r.about].map(csvCell).join(","));
     });
     const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
@@ -472,20 +476,20 @@
     return s;
   }
 
-  function exportJSON() {
-    const data = rows.map(function (r) {
+  function exportJSON(data) {
+    const d = (data || rows).map(function (r) {
       return { name: r.name, pushname: r.pushname, phone: r.phone, lid: r.lid, role: r.role, about: r.about };
     });
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
     download("contactos_" + sanitizeFilename(lastGroupName) + "_" + dateStamp() + ".json", blob);
   }
 
-  function exportXLSX() {
+  function exportXLSX(data) {
     if (typeof XLSX === "undefined") { setStatus("Librería XLSX no disponible.", true); return; }
-    const data = rows.map(function (r, i) {
+    const d = (data || rows).map(function (r, i) {
       return { "#": i + 1, Nombre: r.name, Pushname: r.pushname, Telefono: r.phone, LID: r.lid, Rol: r.role, "Acerca de": r.about };
     });
-    const ws = XLSX.utils.json_to_sheet(data);
+    const ws = XLSX.utils.json_to_sheet(d);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Contactos");
     const arr = XLSX.write(wb, { type: "array", bookType: "xlsx" });
@@ -559,6 +563,11 @@
   });
 
   $("downloadBtn").addEventListener("click", downloadExport);
+
+  $("phoneOnlyCheck").addEventListener("change", function () {
+    chrome.storage.local.set({ phoneOnly: $("phoneOnlyCheck").checked });
+    if (rows.length > 0) renderResults(rows);
+  });
 
   checkLicenseAtStart().then(function () {
     if (!$("licenseGate") || $("licenseGate").classList.contains("hidden")) init();
