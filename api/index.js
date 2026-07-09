@@ -142,6 +142,9 @@ app.post("/api/license/activate", async function (req, res) {
     const payload = verifyRes.payload;
     let license = await db.findLicenseByPayload(payload.email, payload.whatsapp, payload.startDate, payload.endDate);
     if (!license) {
+      // Check if this email has a revoked license (reissue changes dates)
+      const revokedByEmail = await db.findRevokedByEmail(payload.email);
+      if (revokedByEmail) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador" });
       const id = nanoid(12);
       const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
       await db.createLicense(id, payload.email, payload.whatsapp, payload.startDate, payload.endDate, String(licenseKey).slice(0, 16), ip);
@@ -160,9 +163,10 @@ app.post("/api/license/check", async function (req, res) {
     const verifyRes = await verifyLicenseRaw(licenseKey);
     if (!verifyRes.ok) return res.status(400).json({ ok: false, error: verifyRes.error, expired: !!verifyRes.expired });
     const p = payload || verifyRes.payload;
-    const license = await db.findLicenseByPayload(p.email, p.whatsapp, p.startDate, p.endDate);
+    let license = await db.findLicenseByPayload(p.email, p.whatsapp, p.startDate, p.endDate);
+    if (!license) license = await db.findRevokedByEmail(p.email);
     if (!license) return res.status(404).json({ ok: false, error: "Licencia no registrada en el servidor" });
-    if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada", revoked: true });
+    if (license.revoked) return res.json({ ok: false, error: "Licencia revocada", revoked: true });
     res.json({ ok: true, payload: verifyRes.payload, daysLeft: verifyRes.daysLeft, licenseId: license.id, revoked: false });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
