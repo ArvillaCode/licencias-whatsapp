@@ -46,7 +46,8 @@
       let actions = "";
       if (e.id) {
         actions = '<button class="copyKeyBtn copy-btn" data-key="' + esc(e.licenseKey || "") + '">Copiar</button> ';
-        actions += '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Editar</button> ';
+        actions += '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Re-emitir</button> ';
+        actions += '<button class="renewBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-wa="' + esc(e.whatsapp) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Renovar</button> ';
         if (e.revoked) actions += '<button class="restoreBtn copy-btn" data-id="' + e.id + '">Restaurar</button>';
         else actions += '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '">Revocar</button>';
         actions += '<button class="deleteBtn copy-btn danger" data-id="' + e.id + '" data-email="' + esc(e.email) + '">Eliminar</button>';
@@ -90,6 +91,15 @@
         $("editEnd").value = b.dataset.end;
         setStatus($("editStatus"), "Ajusta las fechas y guarda.", "info");
         $("editModal").style.display = "flex";
+      });
+    });
+    document.querySelectorAll(".renewBtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        editLicId = b.dataset.id;
+        $("renewLicInfo").textContent = "Renovando: " + b.dataset.email + " (" + b.dataset.wa + ")";
+        $("renewEnd").value = addDays(todayISO(), 30);
+        setStatus($("renewStatus"), "Selecciona la nueva fecha de expiración.", "info");
+        $("renewModal").style.display = "flex";
       });
     });
   }
@@ -202,6 +212,15 @@
   $("editCancelBtn").addEventListener("click", function () { $("editModal").style.display = "none"; });
   $("editModal").addEventListener("click", function (e) { if (e.target === $("editModal")) $("editModal").style.display = "none"; });
 
+  $("renewCancelBtn").addEventListener("click", function () { $("renewModal").style.display = "none"; });
+  $("renewModal").addEventListener("click", function (e) { if (e.target === $("renewModal")) $("renewModal").style.display = "none"; });
+  document.querySelectorAll(".renew-preset").forEach(function (b) {
+    b.addEventListener("click", function () {
+      const days = parseInt(b.dataset.days, 10);
+      $("renewEnd").value = addDays(todayISO(), days);
+    });
+  });
+
   $("editSaveBtn").addEventListener("click", async function () {
     if (!editLicId) return;
     const startStr = $("editStart").value;
@@ -218,6 +237,23 @@
       refreshLog();
       setStatus($("issueStatus"), "Licencia re-emitida con nuevas fechas. Copia y envía al cliente.", "ok");
     } catch (e) { setStatus($("editStatus"), "Error: " + e.message, "err"); }
+  });
+
+  $("renewSaveBtn").addEventListener("click", async function () {
+    if (!editLicId) return;
+    const endStr = $("renewEnd").value;
+    if (!endStr) { setStatus($("renewStatus"), "Selecciona una fecha de fin.", "err"); return; }
+    setStatus($("renewStatus"), "Renovando...", "info");
+    try {
+      const data = await __CEAuth.fetch("/admin/license/" + editLicId + "/renew", {
+        method: "POST",
+        body: JSON.stringify({ endDate: endStr })
+      });
+      $("licenseOut").value = data.license || "";
+      $("renewModal").style.display = "none";
+      refreshLog();
+      setStatus($("issueStatus"), "Licencia renovada. La clave anterior dejará de funcionar. Copia y envía la nueva al cliente.", "ok");
+    } catch (e) { setStatus($("renewStatus"), "Error: " + e.message, "err"); }
   });
 
   $("licStart").value = todayISO();

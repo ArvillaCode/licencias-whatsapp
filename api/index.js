@@ -290,6 +290,23 @@ app.delete("/admin/license/:id", adminAuth, async function (req, res) {
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
 
+app.post("/admin/license/:id/renew", adminAuth, async function (req, res) {
+  try {
+    const lic = await db.findLicenseById(req.params.id);
+    if (!lic) return res.status(404).json({ ok: false, error: "Licencia no encontrada" });
+    const { endDate } = req.body || {};
+    if (!endDate) return res.status(400).json({ ok: false, error: "Falta endDate" });
+    const endDateIso = new Date(endDate + "T23:59:59.999Z").toISOString();
+    const startDateIso = lic.start_date;
+    if (new Date(endDateIso) < new Date(startDateIso)) return res.status(400).json({ ok: false, error: "endDate debe ser posterior a startDate" });
+    await db.renewLicense(req.params.id, endDateIso);
+    await loadKeyPair();
+    const licenseKey = await buildSignedLicense(lic.email, lic.whatsapp, startDateIso, endDateIso);
+    await db.reissueLicense(req.params.id, startDateIso, endDateIso, licenseKey);
+    res.json({ ok: true, license: licenseKey, licenseId: req.params.id, payload: { email: lic.email, whatsapp: lic.whatsapp, startDate: startDateIso, endDate: endDateIso } });
+  } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
+});
+
 // ── Startup migration ────────────────────────────────────────────────
 (async function () {
   try { await db.query("ALTER TABLE licenses ADD COLUMN IF NOT EXISTS license_key TEXT"); } catch (e) { /* table may not exist yet */ }

@@ -100,6 +100,10 @@ async function setConfig(key, value) {
   );
 }
 
+async function renewLicense(id, endDate) {
+  await query("UPDATE licenses SET end_date = $2 WHERE id = $1", [id, endDate]);
+}
+
 module.exports = {
   query,
   findUserByUsername,
@@ -113,6 +117,7 @@ module.exports = {
   updateLicenseActivation,
   setLicenseRevoked,
   reissueLicense,
+  renewLicense,
   deleteLicense,
   getConfig,
   setConfig,
