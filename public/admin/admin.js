@@ -45,9 +45,11 @@
       else statusHtml = '<span style="color:#1b5e20">activa</span>';
       let actions = "";
       if (e.id) {
-        actions = '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Editar</button> ';
+        actions = '<button class="copyKeyBtn copy-btn" data-key="' + esc(e.licenseKey || "") + '">Copiar</button> ';
+        actions += '<button class="editBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Editar</button> ';
         if (e.revoked) actions += '<button class="restoreBtn copy-btn" data-id="' + e.id + '">Restaurar</button>';
         else actions += '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '">Revocar</button>';
+        actions += '<button class="deleteBtn copy-btn danger" data-id="' + e.id + '" data-email="' + esc(e.email) + '">Eliminar</button>';
       }
       const tr = document.createElement("tr");
       tr.innerHTML =
@@ -67,6 +69,18 @@
     });
     document.querySelectorAll(".restoreBtn").forEach(function (b) {
       b.addEventListener("click", function () { restoreBackend(b.dataset.id); });
+    });
+    document.querySelectorAll(".copyKeyBtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        copyText(b.dataset.key);
+        setStatus($("issueStatus"), "Clave copiada.", "ok");
+      });
+    });
+    document.querySelectorAll(".deleteBtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!confirm("¿Eliminar permanentemente la licencia de " + b.dataset.email + "?")) return;
+        __CEAuth.fetch("/admin/license/" + b.dataset.id, { method: "DELETE" }).then(function () { refreshLog(); }).catch(function (e) { alert("Error: " + e.message); });
+      });
     });
     document.querySelectorAll(".editBtn").forEach(function (b) {
       b.addEventListener("click", function () {

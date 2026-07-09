@@ -52,11 +52,11 @@ async function findLicenseById(id) {
   return res.rows[0] || null;
 }
 
-async function createLicense(id, email, whatsapp, startDate, endDate, licensePrefix, ip) {
+async function createLicense(id, email, whatsapp, startDate, endDate, fullKey, ip) {
   await query(
-    `INSERT INTO licenses (id, email, whatsapp, start_date, end_date, issued_at, revoked, activations, last_ip, license_prefix)
-     VALUES ($1, $2, $3, $4, $5, NOW(), FALSE, 0, $6, $7)`,
-    [id, email, whatsapp, startDate, endDate, ip, licensePrefix]
+    `INSERT INTO licenses (id, email, whatsapp, start_date, end_date, issued_at, revoked, activations, last_ip, license_prefix, license_key)
+     VALUES ($1, $2, $3, $4, $5, NOW(), FALSE, 0, $6, $7, $8)`,
+    [id, email, whatsapp, startDate, endDate, ip, String(fullKey).slice(0, 16), fullKey]
   );
 }
 
@@ -76,10 +76,10 @@ async function setLicenseRevoked(id, revoked) {
   await query("UPDATE licenses SET revoked = $2 WHERE id = $1", [id, revoked]);
 }
 
-async function reissueLicense(id, startDate, endDate, licensePrefix) {
+async function reissueLicense(id, startDate, endDate, fullKey) {
   await query(
-    "UPDATE licenses SET start_date = $2, end_date = $3, issued_at = NOW(), license_prefix = $4, revoked = FALSE WHERE id = $1",
-    [id, startDate, endDate, licensePrefix]
+    "UPDATE licenses SET start_date = $2, end_date = $3, issued_at = NOW(), license_prefix = $4, license_key = $5, revoked = FALSE WHERE id = $1",
+    [id, startDate, endDate, String(fullKey).slice(0, 16), fullKey]
   );
 }
 
@@ -101,6 +101,7 @@ async function setConfig(key, value) {
 }
 
 module.exports = {
+  query,
   findUserByUsername,
   createUser,
   countUsers,

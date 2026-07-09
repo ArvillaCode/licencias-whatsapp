@@ -147,7 +147,7 @@ app.post("/api/license/activate", async function (req, res) {
       if (revokedByEmail) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador" });
       const id = nanoid(12);
       const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
-      await db.createLicense(id, payload.email, payload.whatsapp, payload.startDate, payload.endDate, String(licenseKey).slice(0, 16), ip);
+      await db.createLicense(id, payload.email, payload.whatsapp, payload.startDate, payload.endDate, licenseKey, ip);
       license = await db.findLicenseById(id);
     }
     if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador" });
@@ -160,11 +160,16 @@ app.post("/api/license/check", async function (req, res) {
   try {
     const licenseKey = (req.body && req.body.license) || "";
     const payload = req.body && req.body.payload;
+    const licenseId = req.body && req.body.licenseId;
     const verifyRes = await verifyLicenseRaw(licenseKey);
     if (!verifyRes.ok) return res.status(400).json({ ok: false, error: verifyRes.error, expired: !!verifyRes.expired });
-    const p = payload || verifyRes.payload;
-    let license = await db.findLicenseByPayload(p.email, p.whatsapp, p.startDate, p.endDate);
-    if (!license) license = await db.findRevokedByEmail(p.email);
+    let license = null;
+    if (licenseId) license = await db.findLicenseById(licenseId);
+    if (!license) {
+      const p = payload || verifyRes.payload;
+      license = await db.findLicenseByPayload(p.email, p.whatsapp, p.startDate, p.endDate);
+    }
+    if (!license) license = await db.findRevokedByEmail(verifyRes.payload.email);
     if (!license) return res.status(404).json({ ok: false, error: "Licencia no registrada en el servidor" });
     if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada", revoked: true });
     res.json({ ok: true, payload: verifyRes.payload, daysLeft: verifyRes.daysLeft, licenseId: license.id, revoked: false });
@@ -222,11 +227,11 @@ app.post("/admin/license/issue", adminAuth, async function (req, res) {
     const licenseKey = await buildSignedLicense(email, wa, startDateIso, endDateIso);
     const existing = await db.findLicenseByPayload(email, wa, startDateIso, endDateIso);
     if (existing) {
-      await db.reissueLicense(existing.id, startDateIso, endDateIso, String(licenseKey).slice(0, 16));
+      await db.reissueLicense(existing.id, startDateIso, endDateIso, licenseKey);
       return res.json({ ok: true, license: licenseKey, licenseId: existing.id, payload: { email, whatsapp: wa, startDate: startDateIso, endDate: endDateIso } });
     }
     const id = nanoid(12);
-    await db.createLicense(id, email, wa, startDateIso, endDateIso, String(licenseKey).slice(0, 16), null);
+    await db.createLicense(id, email, wa, startDateIso, endDateIso, licenseKey, null);
     res.json({ ok: true, license: licenseKey, licenseId: id, payload: { email, whatsapp: wa, startDate: startDateIso, endDate: endDateIso } });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
@@ -241,7 +246,7 @@ app.get("/admin/licenses", adminAuth, async function (req, res) {
         startDate: l.start_date, endDate: l.end_date,
         issuedAt: l.issued_at, revoked: l.revoked,
         activations: l.activations, lastActivatedAt: l.last_activated_at,
-        lastIp: l.last_ip, licensePrefix: l.license_prefix,
+        lastIp: l.last_ip, licenseKey: l.license_key || l.license_prefix,
         expired: new Date() > end, daysLeft: Math.ceil((end - new Date()) / 86400000),
       };
     });
@@ -278,7 +283,7 @@ app.post("/admin/license/:id/reissue", adminAuth, async function (req, res) {
     if (new Date(endDateIso) < new Date(startDateIso)) return res.status(400).json({ ok: false, error: "endDate debe ser posterior a startDate" });
     await loadKeyPair();
     const licenseKey = await buildSignedLicense(lic.email, lic.whatsapp, startDateIso, endDateIso);
-    await db.reissueLicense(req.params.id, startDateIso, endDateIso, String(licenseKey).slice(0, 16));
+    await db.reissueLicense(req.params.id, startDateIso, endDateIso, licenseKey);
     res.json({ ok: true, license: licenseKey, licenseId: req.params.id, payload: { email: lic.email, whatsapp: lic.whatsapp, startDate: startDateIso, endDate: endDateIso } });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
@@ -289,6 +294,11 @@ app.delete("/admin/license/:id", adminAuth, async function (req, res) {
     res.json({ ok: true, deleted: 1 });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
+
+// ── Startup migration ────────────────────────────────────────────────
+(async function () {
+  try { await db.query("ALTER TABLE licenses ADD COLUMN IF NOT EXISTS license_key TEXT"); } catch (e) { /* table may not exist yet */ }
+})();
 
 // ── 404 handler ──────────────────────────────────────────────────────
 app.use(function (req, res) { res.status(404).json({ error: "Endpoint no encontrado: " + req.method + " " + req.path }); });

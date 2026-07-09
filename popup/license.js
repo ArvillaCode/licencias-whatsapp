@@ -111,12 +111,12 @@
     } catch (e) { return { ok: false, error: "No se pudo conectar al backend: " + (e.message || e) }; }
   }
 
-  async function checkLicenseBackend(licenseKey, payload) {
+  async function checkLicenseBackend(licenseKey, payload, licenseId) {
     if (!backendEnabled()) return null;
     try {
       const res = await fetch(backendUrl() + "/api/license/check", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ license: licenseKey, payload: payload })
+        body: JSON.stringify({ license: licenseKey, payload: payload, licenseId: licenseId || null })
       });
       const data = await res.json();
       if (!res.ok) return { ok: false, error: data.error || ("HTTP " + res.status), revoked: !!data.revoked, expired: !!data.expired };
@@ -132,7 +132,7 @@
     const lastCheck = await getLastCheck();
     if (backendEnabled() && (forceBackend || Date.now() - lastCheck > CHECK_INTERVAL_MS)) {
       setLastCheck(Date.now());
-      const backendRes = await checkLicenseBackend(stored.license, localRes.payload);
+      const backendRes = await checkLicenseBackend(stored.license, localRes.payload, stored.licenseId);
       if (backendRes) {
         if (!backendRes.ok) {
           if (backendRes.revoked) return { valid: false, reason: "Licencia revocada por el administrador", revoked: true, payload: localRes.payload };
