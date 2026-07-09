@@ -15,6 +15,7 @@
       if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
       $("userInfo").textContent = data.user ? data.user.username : "—";
       $("loadingScreen").style.display = "none";
+      $("sidebar").style.display = "flex";
       $("adminContent").style.display = "block";
     } catch (e) {
       window.__CEAuth.clearToken();
@@ -24,25 +25,116 @@
 
   function setStatus(el, msg, kind) { if (!el) return; el.className = "status " + (kind || "info"); el.style.display = "block"; el.textContent = msg; }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-
-
   function todayISO() { return new Date().toISOString().slice(0, 10); }
   function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
 
   var editLicId = null;
+  var allLicenses = [];
 
+  // ── Navigation ──────────────────────────────────────────────────
+  document.querySelectorAll(".nav-item").forEach(function (item) {
+    item.addEventListener("click", function () {
+      document.querySelectorAll(".nav-item").forEach(function (n) { n.classList.remove("active"); });
+      item.classList.add("active");
+      document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+      var page = $("page-" + item.dataset.page);
+      if (page) page.classList.add("active");
+      if (item.dataset.page === "dashboard") refreshDashboard();
+    });
+  });
+
+  // ── Dashboard ───────────────────────────────────────────────────
+  function animateValue(el, start, end, duration) {
+    var startTime = null;
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = Math.min((timestamp - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.floor(eased * (end - start) + start);
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function renderStatusChart(licenses) {
+    var total = licenses.length;
+    var active = licenses.filter(function (l) { return !l.revoked && !l.expired && new Date(l.endDate) > new Date(); }).length;
+    var revoked = licenses.filter(function (l) { return l.revoked; }).length;
+    var expired = licenses.filter(function (l) { return !l.revoked && (l.expired || new Date(l.endDate) < new Date()); }).length;
+
+    var max = Math.max(total, 1);
+    var chart = $("statusChart");
+    chart.innerHTML = "";
+
+    var rows = [
+      { label: "Total", value: total, color: "blue", pct: 100 },
+      { label: "Activas", value: active, color: "green", pct: Math.round(active / max * 100) },
+      { label: "Revocadas", value: revoked, color: "red", pct: Math.round(revoked / max * 100) },
+      { label: "Expiradas", value: expired, color: "yellow", pct: Math.round(expired / max * 100) }
+    ];
+
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML = '<div class="bar-label">' + r.label + '</div><div class="bar-track"><div class="bar-fill ' + r.color + '" style="width:0%"></div></div><div style="width:40px;font-size:13px;font-weight:600;text-align:right">' + r.value + '</div>';
+      chart.appendChild(row);
+      setTimeout(function () {
+        row.querySelector(".bar-fill").style.width = r.pct + "%";
+      }, 100);
+    });
+  }
+
+  function renderRecentList(licenses) {
+    var list = $("recentList");
+    list.innerHTML = "";
+    var sorted = licenses.slice().sort(function (a, b) { return (b.lastActivatedAt || "").localeCompare(a.lastActivatedAt || ""); });
+    var recent = sorted.filter(function (l) { return l.lastActivatedAt; }).slice(0, 5);
+    if (!recent.length) {
+      list.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">Sin activaciones recientes</p>';
+      return;
+    }
+    recent.forEach(function (l) {
+      var item = document.createElement("div");
+      item.className = "recent-item";
+      var date = l.lastActivatedAt ? new Date(l.lastActivatedAt).toLocaleDateString("es") : "—";
+      item.innerHTML = '<div class="ri-icon">' + (l.revoked ? "🚫" : "✅") + '</div><div class="ri-info"><div class="ri-email">' + esc(l.email) + '</div><div class="ri-date">' + date + '</div></div>';
+      list.appendChild(item);
+    });
+  }
+
+  async function refreshDashboard() {
+    try {
+      var data = await __CEAuth.fetch("/admin/licenses", { method: "GET" });
+      allLicenses = data.licenses || [];
+      var total = allLicenses.length;
+      var active = allLicenses.filter(function (l) { return !l.revoked && !l.expired && new Date(l.endDate) > new Date(); }).length;
+      var revoked = allLicenses.filter(function (l) { return l.revoked; }).length;
+      var expired = allLicenses.filter(function (l) { return !l.revoked && (l.expired || new Date(l.endDate) < new Date()); }).length;
+
+      animateValue($("dTotal"), 0, total, 800);
+      animateValue($("dActive"), 0, active, 800);
+      animateValue($("dRevoked"), 0, revoked, 800);
+      animateValue($("dExpired"), 0, expired, 800);
+
+      renderStatusChart(allLicenses);
+      renderRecentList(allLicenses);
+    } catch (e) {
+      console.error("Dashboard error:", e);
+    }
+  }
+
+  // ── Licenses ────────────────────────────────────────────────────
   function renderLog(items) {
     const tb = $("logBody");
     if (!tb) return;
     tb.innerHTML = "";
-    if (!items.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999">Sin licencias</td></tr>'; return; }
+    if (!items.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary)">Sin licencias</td></tr>'; return; }
     items.forEach(function (e, i) {
       const days = e.daysLeft != null ? e.daysLeft : Math.round((new Date(e.endDate) - new Date(e.startDate)) / 86400000);
       let statusHtml;
-      if (e.revoked) statusHtml = '<span style="color:#c62828;font-weight:600">REVOCADA</span>';
-      else if (e.expired || (new Date(e.endDate) < new Date())) statusHtml = '<span style="color:#999">expirada</span>';
-      else statusHtml = '<span style="color:#1b5e20">activa</span>';
+      if (e.revoked) statusHtml = '<span style="color:var(--error-text);font-weight:600">REVOCADA</span>';
+      else if (e.expired || (new Date(e.endDate) < new Date())) statusHtml = '<span style="color:var(--text-secondary)">expirada</span>';
+      else statusHtml = '<span style="color:var(--ok-text)">activa</span>';
       let actions = "";
       if (e.id) {
         actions = '<button class="copyKeyBtn copy-btn" data-key="' + esc(e.licenseKey || "") + '" title="Copiar clave">📋</button> ';
@@ -66,6 +158,7 @@
         "<td>" + actions + "</td>";
       tb.appendChild(tr);
     });
+
     document.querySelectorAll(".revokeBtn").forEach(function (b) {
       b.addEventListener("click", function () { revokeBackend(b.dataset.id); });
     });
@@ -75,19 +168,19 @@
     document.querySelectorAll(".copyKeyBtn").forEach(function (b) {
       b.addEventListener("click", function () {
         copyText(b.dataset.key);
-        setStatus($("logStatus"), "Clave copiada al portapapeles.", "ok");
+        setStatus($("logStatus"), "Clave copiada.", "ok");
       });
     });
     document.querySelectorAll(".deleteBtn").forEach(function (b) {
       b.addEventListener("click", function () {
         if (!confirm("¿Eliminar permanentemente la licencia de " + b.dataset.email + "?")) return;
-        __CEAuth.fetch("/admin/license/" + b.dataset.id, { method: "DELETE" }).then(function () { refreshLog(); setStatus($("logStatus"), "Licencia eliminada.", "ok"); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
+        __CEAuth.fetch("/admin/license/" + b.dataset.id, { method: "DELETE" }).then(function () { refreshLog(); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
       });
     });
     document.querySelectorAll(".resetDeviceBtn").forEach(function (b) {
       b.addEventListener("click", function () {
-        if (!confirm("¿Resetear el dispositivo vinculado de " + b.dataset.email + "? El cliente podrá activar desde otro navegador.")) return;
-        __CEAuth.fetch("/admin/license/" + b.dataset.id + "/reset-device", { method: "POST" }).then(function () { refreshLog(); setStatus($("logStatus"), "Dispositivo reseteado. El cliente puede activar desde cualquier navegador.", "ok"); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
+        if (!confirm("¿Resetear el dispositivo vinculado de " + b.dataset.email + "?")) return;
+        __CEAuth.fetch("/admin/license/" + b.dataset.id + "/reset-device", { method: "POST" }).then(function () { refreshLog(); setStatus($("logStatus"), "Dispositivo reseteado.", "ok"); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
       });
     });
     document.querySelectorAll(".editBtn").forEach(function (b) {
@@ -114,14 +207,15 @@
   async function refreshLog() {
     try {
       const data = await __CEAuth.fetch("/admin/licenses", { method: "GET" });
-      renderLog(data.licenses || []);
+      allLicenses = data.licenses || [];
+      renderLog(allLicenses);
     } catch (e) {
-      if ($("listHint")) $("listHint").textContent = "Error: " + e.message;
+      console.error("Refresh error:", e);
     }
   }
 
   async function revokeBackend(id) {
-    if (!confirm("¿Revocar esta licencia? La extensión la rechazará al re-validar.")) return;
+    if (!confirm("¿Revocar esta licencia?")) return;
     try { await __CEAuth.fetch("/admin/license/" + id + "/revoke", { method: "POST" }); refreshLog(); setStatus($("logStatus"), "Licencia revocada.", "ok"); }
     catch (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); }
   }
@@ -150,14 +244,12 @@
       });
       $("licenseOut").value = data.license || "";
       refreshLog();
-      setStatus($("issueStatus"), "Licencia emitida" + (data.licenseId ? " (ID: " + data.licenseId + ")" : "") + ". Copia y envíala al cliente.", "ok");
+      setStatus($("issueStatus"), "Licencia emitida. Copia y envíala al cliente.", "ok");
     } catch (e) { setStatus($("issueStatus"), "Error: " + e.message, "err"); }
   }
 
   // ── Init ──────────────────────────────────────────────────────────
   __CEAuth.initThemeBtn("themeBtn");
-
-  $("backendUrlDisplay").textContent = window.location.origin;
 
   $("logoutBtn").addEventListener("click", function () {
     window.__CEAuth.clearToken();
@@ -242,7 +334,7 @@
       $("licenseOut").value = data.license || "";
       $("editModal").style.display = "none";
       refreshLog();
-      setStatus($("issueStatus"), "Licencia re-emitida con nuevas fechas. Copia y envía al cliente.", "ok");
+      setStatus($("issueStatus"), "Licencia re-emitida.", "ok");
     } catch (e) { setStatus($("editStatus"), "Error: " + e.message, "err"); }
   });
 
@@ -258,11 +350,12 @@
       });
       $("renewModal").style.display = "none";
       refreshLog();
-      setStatus($("issueStatus"), "Licencia renovada hasta " + endStr + ". El cliente no necesita cambiar su clave.", "ok");
+      setStatus($("issueStatus"), "Licencia renovada hasta " + endStr + ".", "ok");
     } catch (e) { setStatus($("renewStatus"), "Error: " + e.message, "err"); }
   });
 
   $("licStart").value = todayISO();
   $("licEnd").value = addDays(todayISO(), 30);
   refreshLog();
+  refreshDashboard();
 })();

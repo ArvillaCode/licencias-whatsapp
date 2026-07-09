@@ -7,110 +7,246 @@
   <link rel="stylesheet" href="auth.css" />
   <script src="theme.js"></script>
   <style>
-    .admin-wrap { max-width: 900px; margin: 24px auto; padding: 0 20px; width: 100%; }
-    .admin-wrap h1 { color: var(--primary); }
-    .admin-wrap h2 { margin-top: 32px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
-    .admin-wrap section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
-    .admin-wrap label { display: block; font-weight: 600; margin: 8px 0 4px; }
-    .admin-wrap input[type="text"], .admin-wrap input[type="email"], .admin-wrap input[type="date"], .admin-wrap textarea {
-      width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; box-sizing: border-box; font-family: monospace; background: var(--input-bg); color: var(--text);
+    body { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; min-height: 100vh; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 50;
+      transition: transform .3s;
     }
-    .admin-wrap input:focus { outline: none; border-color: var(--primary); }
-    .admin-wrap textarea { min-height: 120px; resize: vertical; }
-    .admin-wrap .row { margin-bottom: 12px; }
-    .admin-wrap .row2 { display: flex; gap: 12px; }
-    .admin-wrap .row2 > div { flex: 1; }
-    .admin-wrap button { padding: 10px 16px; border: 1px solid var(--primary); background: var(--primary); color: var(--primary-text); font-weight: 600; border-radius: 6px; cursor: pointer; font-size: 14px; }
-    .admin-wrap button:hover { background: var(--primary-hover); }
-    .admin-wrap button:disabled { opacity: .5; cursor: not-allowed; }
-    .admin-wrap button.secondary { background: var(--surface); color: var(--primary); }
-    .admin-wrap button.danger { border-color: var(--error-border); background: var(--surface); color: var(--error-text); }
-    .admin-wrap .status { padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-size: 13px; }
-    .admin-wrap .status.ok { background: var(--ok-bg); color: var(--ok-text); }
-    .admin-wrap .status.err { background: var(--error-bg); color: var(--error-text); }
-    .admin-wrap .status.info { background: var(--bg); color: var(--text-secondary); }
-    .admin-wrap table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; min-width: 750px; }
-    .admin-wrap th, .admin-wrap td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
-    .admin-wrap th { background: var(--bg); }
-    .admin-wrap .copy-btn { padding: 5px 8px; font-size: 15px; white-space: nowrap; line-height: 1; border-radius: 6px; }
-    .admin-wrap .hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-    .admin-wrap code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-    .user-bar { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .user-bar span { font-size: 13px; color: var(--text-secondary); }
-    .user-bar button { padding: 6px 12px; font-size: 13px; }
+    .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); text-align: center; }
+    .sidebar-header h2 { color: var(--primary); font-size: 18px; margin: 0; }
+    .sidebar-header p { font-size: 11px; color: var(--text-secondary); margin: 4px 0 0; }
+    .sidebar-nav { flex: 1; padding: 12px 0; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 20px; cursor: pointer;
+      color: var(--text-secondary); font-size: 14px; transition: all .2s; border-left: 3px solid transparent;
+    }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { color: var(--primary); background: var(--ok-bg); border-left-color: var(--primary); font-weight: 600; }
+    .nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+    .sidebar-footer .user-info { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+    .sidebar-footer button { width: 100%; padding: 8px; font-size: 13px; }
+    .main-content { margin-left: 240px; flex: 1; padding: 24px 32px; min-height: 100vh; }
+    .page { display: none; animation: fadeIn .3s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 24px; color: var(--text); }
+    .page-header p { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+      position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .stat-card .stat-icon { font-size: 32px; position: absolute; right: 16px; top: 16px; opacity: .15; }
+    .stat-card .stat-value { font-size: 32px; font-weight: 700; color: var(--text); line-height: 1; }
+    .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 6px; }
+    .stat-card.green { border-left: 4px solid var(--primary); }
+    .stat-card.red { border-left: 4px solid var(--error-text); }
+    .stat-card.yellow { border-left: 4px solid #f9a825; }
+    .stat-card.blue { border-left: 4px solid #1976d2; }
+    .stat-card.green .stat-value { color: var(--primary); }
+    .stat-card.red .stat-value { color: var(--error-text); }
+    .stat-card.yellow .stat-value { color: #f9a825; }
+    .stat-card.blue .stat-value { color: #1976d2; }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    }
+    .chart-card h3 { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
+    .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label { width: 80px; font-size: 12px; color: var(--text-secondary); text-align: right; }
+    .bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 12px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 12px; transition: width 1s ease; display: flex; align-items: center; padding-left: 8px; font-size: 11px; color: white; font-weight: 600; min-width: 30px; }
+    .bar-fill.green { background: linear-gradient(90deg, #25d366, #128c7e); }
+    .bar-fill.red { background: linear-gradient(90deg, #e53935, #c62828); }
+    .bar-fill.yellow { background: linear-gradient(90deg, #f9a825, #f57f17); }
+    .bar-fill.blue { background: linear-gradient(90deg, #1976d2, #0d47a1); }
+    .recent-list { display: flex; flex-direction: column; gap: 8px; }
+    .recent-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg);
+      border-radius: 8px; font-size: 13px; transition: background .2s;
+    }
+    .recent-item:hover { background: var(--border); }
+    .recent-item .ri-icon { font-size: 20px; }
+    .recent-item .ri-info { flex: 1; }
+    .recent-item .ri-email { font-weight: 600; color: var(--text); }
+    .recent-item .ri-date { font-size: 11px; color: var(--text-secondary); }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    .section-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px;
+    }
+    .section-card h3 { font-size: 16px; color: var(--text); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    label { display: block; font-weight: 600; margin: 8px 0 4px; font-size: 13px; }
+    input[type="text"], input[type="email"], input[type="date"], textarea {
+      width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box;
+      font-family: monospace; background: var(--input-bg); color: var(--text); transition: border .2s;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--primary); }
+    textarea { min-height: 100px; resize: vertical; }
+    .row { margin-bottom: 12px; }
+    .row2 { display: flex; gap: 12px; }
+    .row2 > div { flex: 1; }
+    button {
+      padding: 10px 16px; border: 1px solid var(--primary); background: var(--primary); color: var(--primary-text);
+      font-weight: 600; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all .2s;
+    }
+    button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    button.secondary { background: var(--surface); color: var(--primary); }
+    button.secondary:hover { background: var(--bg); }
+    button.danger { border-color: var(--error-border); background: var(--surface); color: var(--error-text); }
+    button.danger:hover { background: var(--error-bg); }
+    .status { padding: 10px 14px; border-radius: 8px; margin: 8px 0; font-size: 13px; }
+    .status.ok { background: var(--ok-bg); color: var(--ok-text); }
+    .status.err { background: var(--error-bg); color: var(--error-text); }
+    .status.info { background: var(--bg); color: var(--text-secondary); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    th { background: var(--bg); font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+    tr:hover td { background: var(--bg); }
+    .copy-btn { padding: 5px 8px; font-size: 15px; white-space: nowrap; line-height: 1; border-radius: 6px; border: none; }
+    .hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
     .hidden { display: none !important; }
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 90%; max-width: 460px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
-    .modal-card h3 { margin: 0 0 8px; color: var(--primary); }
+    .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 90%; max-width: 460px; box-shadow: 0 16px 48px rgba(0,0,0,.3); }
+    .modal-card h3 { margin: 0 0 12px; color: var(--primary); }
+    .theme-toggle { position: fixed; top: 16px; right: 16px; z-index: 100; }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
   <button class="theme-toggle" id="themeBtn" title="Cambiar tema">🌙</button>
-  <div class="admin-wrap" id="adminContent" style="display:none">
-    <div class="user-bar">
-      <span id="userInfo">—</span>
-      <button id="logoutBtn" class="secondary">Cerrar sesión</button>
-    </div>
-    <h1>Upfunnel Admin — Licencias</h1>
-    <p class="hint">Emite y gestiona licencias para "Upfunnel Contact Extract". Conectado al backend: <code id="backendUrlDisplay">—</code></p>
 
-    <h2>1. Emitir licencia</h2>
-    <section>
-      <div class="row2">
-        <div><label>Email del cliente</label><input type="email" id="licEmail" placeholder="cliente@correo.com" /></div>
-        <div><label>Número de WhatsApp (con + y país)</label><input type="text" id="licWa" placeholder="+573001234567" /></div>
-      </div>
-      <div class="row2">
-        <div>
-          <label>Fecha de inicio</label>
-          <input type="date" id="licStart" />
-          <span class="hint">Por defecto: hoy</span>
-        </div>
-        <div>
-          <label>Fecha de fin (ajustable)</label>
-          <input type="date" id="licEnd" />
-          <span class="hint">Recomendado: +30 días</span>
-        </div>
-      </div>
-      <div class="row">
-        <button id="issueBtn">Emitir licencia</button>
-        <button id="preset30Btn" class="secondary">+30 días</button>
-        <button id="preset90Btn" class="secondary">+90 días</button>
-        <button id="preset365Btn" class="secondary">+1 año</button>
-      </div>
-      <div id="issueStatus" class="status info">Completa los campos y pulsa "Emitir licencia".</div>
-      <div class="row">
-        <label>Clave de licencia (enviar al cliente):</label>
-        <textarea id="licenseOut" readonly placeholder="Aparecerá aquí tras emitir"></textarea>
-        <button id="copyLicBtn" class="copy-btn">Copiar licencia</button>
-      </div>
-    </section>
-
-    <h2>2. Licencias emitidas</h2>
-    <section>
-      <button id="refreshListBtn" class="secondary">Refrescar</button>
-      <button id="exportCsvBtn" class="secondary">Exportar CSV</button>
-      <div id="logStatus" class="status" style="display:none"></div>
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-      <table id="logTable">
-        <thead><tr><th>#</th><th>Email</th><th>WhatsApp</th><th>Inicio</th><th>Fin</th><th>Días</th><th>Estado</th><th>Activ.</th><th>Acciones</th></tr></thead>
-        <tbody id="logBody"></tbody>
-      </table>
-      </div>
-    </section>
-
-    <h2>3. Verificar una licencia (prueba)</h2>
-    <section>
-      <label>Pegar clave de licencia:</label>
-      <textarea id="verifyInput" placeholder="Pega una clave de licencia para simular la verificación que hace la extensión"></textarea>
-      <button id="verifyBtn">Verificar</button>
-      <div id="verifyResult" class="status info">—</div>
-    </section>
-  </div>
-
-  <div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;min-height:50vh;">
+  <div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;">
     <p style="color:var(--text-secondary)">Verificando sesión...</p>
   </div>
+
+  <aside class="sidebar" id="sidebar" style="display:none">
+    <div class="sidebar-header">
+      <h2>Upfunnel</h2>
+      <p>Gestión de Licencias</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> Dashboard</div>
+      <div class="nav-item" data-page="licenses"><span class="icon">🔑</span> Licencias</div>
+      <div class="nav-item" data-page="issue"><span class="icon">➕</span> Emitir</div>
+      <div class="nav-item" data-page="verify"><span class="icon">🔍</span> Verificar</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><span id="userInfo">—</span></div>
+      <button id="logoutBtn" class="secondary" style="font-size:12px;padding:6px 12px">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="main-content" id="adminContent" style="display:none">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Estadísticas en tiempo real del sistema de licencias</p>
+      </div>
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card green"><div class="stat-icon">🔑</div><div class="stat-value" id="dTotal">0</div><div class="stat-label">Total Licencias</div></div>
+        <div class="stat-card blue"><div class="stat-icon">✅</div><div class="stat-value" id="dActive">0</div><div class="stat-label">Activas</div></div>
+        <div class="stat-card red"><div class="stat-icon">🚫</div><div class="stat-value" id="dRevoked">0</div><div class="stat-label">Revocadas</div></div>
+        <div class="stat-card yellow"><div class="stat-icon">⏰</div><div class="stat-value" id="dExpired">0</div><div class="stat-label">Expiradas</div></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>Distribución por estado</h3>
+          <div class="bar-chart" id="statusChart"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Activaciones recientes</h3>
+          <div class="recent-list" id="recentList"><p style="color:var(--text-secondary);font-size:13px">Cargando...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LICENCIAS -->
+    <div class="page" id="page-licenses">
+      <div class="page-header">
+        <h1>Licencias</h1>
+        <p>Gestiona todas las licencias emitidas</p>
+      </div>
+      <div class="section-card">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button id="refreshListBtn" class="secondary">🔄 Refrescar</button>
+          <button id="exportCsvBtn" class="secondary">📥 Exportar CSV</button>
+        </div>
+        <div id="logStatus" class="status" style="display:none"></div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table id="logTable">
+            <thead><tr><th>#</th><th>Email</th><th>WhatsApp</th><th>Inicio</th><th>Fin</th><th>Días</th><th>Estado</th><th>Activ.</th><th>Acciones</th></tr></thead>
+            <tbody id="logBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMITIR -->
+    <div class="page" id="page-issue">
+      <div class="page-header">
+        <h1>Emitir Licencia</h1>
+        <p>Crea una nueva licencia para un cliente</p>
+      </div>
+      <div class="section-card">
+        <div class="row2">
+          <div><label>Email del cliente</label><input type="email" id="licEmail" placeholder="cliente@correo.com" /></div>
+          <div><label>Número de WhatsApp (con + y país)</label><input type="text" id="licWa" placeholder="+573001234567" /></div>
+        </div>
+        <div class="row2">
+          <div>
+            <label>Fecha de inicio</label>
+            <input type="date" id="licStart" />
+            <span class="hint">Por defecto: hoy</span>
+          </div>
+          <div>
+            <label>Fecha de fin</label>
+            <input type="date" id="licEnd" />
+            <span class="hint">Recomendado: +30 días</span>
+          </div>
+        </div>
+        <div class="row">
+          <button id="issueBtn">Emitir licencia</button>
+          <button id="preset30Btn" class="secondary">+30 días</button>
+          <button id="preset90Btn" class="secondary">+90 días</button>
+          <button id="preset365Btn" class="secondary">+1 año</button>
+        </div>
+        <div id="issueStatus" class="status info">Completa los campos y pulsa "Emitir licencia".</div>
+        <div class="row">
+          <label>Clave de licencia (enviar al cliente):</label>
+          <textarea id="licenseOut" readonly placeholder="Aparecerá aquí tras emitir"></textarea>
+          <button id="copyLicBtn" class="copy-btn">📋 Copiar licencia</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERIFICAR -->
+    <div class="page" id="page-verify">
+      <div class="page-header">
+        <h1>Verificar Licencia</h1>
+        <p>Prueba una clave de licencia contra el backend</p>
+      </div>
+      <div class="section-card">
+        <label>Pegar clave de licencia:</label>
+        <textarea id="verifyInput" placeholder="Pega una clave de licencia para simular la verificación que hace la extensión"></textarea>
+        <button id="verifyBtn">🔍 Verificar</button>
+        <div id="verifyResult" class="status info">—</div>
+      </div>
+    </div>
+  </main>
 
   <div id="editModal" class="modal-overlay" style="display:none">
     <div class="modal-card">
