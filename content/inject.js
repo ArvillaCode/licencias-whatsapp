@@ -503,12 +503,17 @@
     };
   }
 
-  function getSendApi() {
-    const s = findModuleByShape(["addAndSendMsgToChat"]);
-    if (s) return s;
-    const s2 = findModuleByShape(["sendTextMsgToChat"]);
-    if (s2) return { addAndSendMsgToChat: s2.sendTextMsgToChat };
-    return null;
+  // Descubrimiento memoizado de los módulos de envío (findModuleByShape recorre
+  // todos los módulos, así que se hace una sola vez).
+  let _sendActionMod = undefined;   // { sendTextMsgToChat }
+  let _addSendMod = undefined;      // { addAndSendMsgToChat }
+  function getSendAction() {
+    if (_sendActionMod === undefined) _sendActionMod = findModuleByShape(["sendTextMsgToChat"]) || null;
+    return _sendActionMod;
+  }
+  function getAddSend() {
+    if (_addSendMod === undefined) _addSendMod = findModuleByShape(["addAndSendMsgToChat"]) || null;
+    return _addSendMod;
   }
 
   function getMsgKey() {
@@ -516,6 +521,33 @@
     if (m && m.createMsgKey) return m;
     const m2 = findModuleByShape(["createMsgKey", "create"]);
     return m2 || null;
+  }
+
+  // Último recurso: construir el mensaje a mano con un MsgKey válido y usar
+  // addAndSendMsgToChat. Es lo más frágil (depende de la forma interna del msg),
+  // por eso solo se usa si las APIs de alto nivel no están disponibles.
+  async function sendViaAddAndSend(chat, wid, textWithInvisible) {
+    const mod = getAddSend();
+    if (!mod || !mod.addAndSendMsgToChat) throw new Error("addAndSendMsgToChat no disponible");
+    let msgId = null;
+    try {
+      const km = getMsgKey();
+      if (km) {
+        const newId = (km.newId && km.newId()) ||
+                      (km.MsgKey && km.MsgKey.newId && km.MsgKey.newId()) || null;
+        const createKey = km.createMsgKey || (km.MsgKey && km.MsgKey.create) || km.create;
+        if (newId && createKey) msgId = createKey({ fromMe: true, remote: wid, id: newId, self: "out" });
+      }
+    } catch (e) { msgId = null; }
+    const msg = {
+      body: textWithInvisible, type: "chat", subtype: null,
+      t: Math.floor(Date.now() / 1000), from: chat.id, to: wid,
+      self: "out", isNewMsg: true, local: true, ack: 0
+    };
+    if (msgId) msg.id = msgId;
+    const result = await mod.addAndSendMsgToChat(chat, msg);
+    if (result && result[0] && typeof result[0].then === "function") await result[0];
+    return { ok: true, msgId: (msgId && msgId.toString) ? msgId.toString() : null };
   }
 
   async function sendTextMessage(chatId, text) {
@@ -529,41 +561,49 @@
     let chat = Chat.get ? Chat.get(wid) : null;
     if (!chat && Chat.find) chat = await Chat.find(wid);
     if (!chat) throw new Error("Chat no encontrado: " + chatId);
-    const sendApi = getSendApi();
-    if (!sendApi || !sendApi.addAndSendMsgToChat) throw new Error("API de envío no disponible");
     const textWithInvisible = injectInvisibleText(text);
-    // addAndSendMsgToChat espera un mensaje con un MsgKey (id) válido; sin él el
-    // envío se rechaza silenciosamente. Construirlo de forma defensiva.
-    let msgId = null;
-    try {
-      const km = getMsgKey();
-      if (km) {
-        const newId = (km.newId && km.newId()) ||
-                      (km.MsgKey && km.MsgKey.newId && km.MsgKey.newId()) || null;
-        const createKey = km.createMsgKey || (km.MsgKey && km.MsgKey.create) || km.create;
-        if (newId && createKey) msgId = createKey({ fromMe: true, remote: wid, id: newId, self: "out" });
-      }
-    } catch (e) { msgId = null; }
-    const msg = {
-      body: textWithInvisible,
-      type: "chat",
-      subtype: null,
-      t: Math.floor(Date.now() / 1000),
-      from: chat.id,
-      to: wid,
-      self: "out",
-      isNewMsg: true,
-      local: true,
-      ack: 0
-    };
-    if (msgId) msg.id = msgId;
-    const result = await sendApi.addAndSendMsgToChat(chat, msg);
-    // addAndSendMsgToChat suele devolver [promesaDeEnvío, modeloMsg]; si la promesa
-    // se rechaza, el mensaje NO salió: propagarlo como error real para verlo en el popup.
-    if (result && result[0] && typeof result[0].then === "function") {
-      try { await result[0]; } catch (e) { throw new Error("WhatsApp rechazó el envío: " + String(e && e.message || e)); }
+
+    // Se prueban varias estrategias de envío en orden de robustez. Las de alto nivel
+    // construyen el modelo del mensaje (y su MsgKey) internamente, evitando los
+    // errores del tipo "this.findImpl is not a function" al manipular objetos crudos.
+    const strategies = [];
+    // 1) Método del propio modelo Chat, si existe (el más estable entre versiones).
+    if (chat && typeof chat.sendMessage === "function") {
+      strategies.push(["chat.sendMessage", async function () {
+        const r = await chat.sendMessage(textWithInvisible);
+        return { ok: true, msgId: r && r.id ? String(r.id) : null };
+      }]);
     }
-    return { ok: true, msgId: (msgId && msgId.toString) ? msgId.toString() : null };
+    // 2) Acción de alto nivel sendTextMsgToChat(chat, text): arma todo internamente.
+    const action = getSendAction();
+    if (action && typeof action.sendTextMsgToChat === "function") {
+      strategies.push(["sendTextMsgToChat", async function () {
+        await action.sendTextMsgToChat(chat, textWithInvisible, {});
+        return { ok: true };
+      }]);
+    }
+    // 3) Último recurso: construcción manual + addAndSendMsgToChat.
+    if (getAddSend()) {
+      strategies.push(["addAndSendMsgToChat", function () {
+        return sendViaAddAndSend(chat, wid, textWithInvisible);
+      }]);
+    }
+
+    if (!strategies.length) throw new Error("No hay API de envío disponible en esta versión de WhatsApp Web");
+
+    let lastErr = null;
+    for (let s = 0; s < strategies.length; s++) {
+      const name = strategies[s][0], fn = strategies[s][1];
+      try {
+        const out = await fn();
+        LOG("Enviado vía " + name);
+        return out;
+      } catch (e) {
+        lastErr = e;
+        LOG("Estrategia '" + name + "' falló: " + String(e && e.message || e));
+      }
+    }
+    throw new Error("Envío falló (" + strategies.length + " estrategias): " + String(lastErr && lastErr.message || lastErr));
   }
 
   async function handleRequest(msg) {
