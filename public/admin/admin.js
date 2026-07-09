@@ -22,7 +22,7 @@
     }
   })();
 
-  function setStatus(el, msg, kind) { if (!el) return; el.className = "status " + (kind || "info"); el.textContent = msg; }
+  function setStatus(el, msg, kind) { if (!el) return; el.className = "status " + (kind || "info"); el.style.display = "block"; el.textContent = msg; }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
 
@@ -73,13 +73,13 @@
     document.querySelectorAll(".copyKeyBtn").forEach(function (b) {
       b.addEventListener("click", function () {
         copyText(b.dataset.key);
-        setStatus($("issueStatus"), "Clave copiada.", "ok");
+        setStatus($("logStatus"), "Clave copiada al portapapeles.", "ok");
       });
     });
     document.querySelectorAll(".deleteBtn").forEach(function (b) {
       b.addEventListener("click", function () {
         if (!confirm("¿Eliminar permanentemente la licencia de " + b.dataset.email + "?")) return;
-        __CEAuth.fetch("/admin/license/" + b.dataset.id, { method: "DELETE" }).then(function () { refreshLog(); }).catch(function (e) { alert("Error: " + e.message); });
+        __CEAuth.fetch("/admin/license/" + b.dataset.id, { method: "DELETE" }).then(function () { refreshLog(); setStatus($("logStatus"), "Licencia eliminada.", "ok"); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
       });
     });
     document.querySelectorAll(".editBtn").forEach(function (b) {
@@ -105,12 +105,12 @@
 
   async function revokeBackend(id) {
     if (!confirm("¿Revocar esta licencia? La extensión la rechazará al re-validar.")) return;
-    try { await __CEAuth.fetch("/admin/license/" + id + "/revoke", { method: "POST" }); refreshLog(); }
-    catch (e) { alert("Error: " + e.message); }
+    try { await __CEAuth.fetch("/admin/license/" + id + "/revoke", { method: "POST" }); refreshLog(); setStatus($("logStatus"), "Licencia revocada.", "ok"); }
+    catch (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); }
   }
   async function restoreBackend(id) {
-    try { await __CEAuth.fetch("/admin/license/" + id + "/restore", { method: "POST" }); refreshLog(); }
-    catch (e) { alert("Error: " + e.message); }
+    try { await __CEAuth.fetch("/admin/license/" + id + "/restore", { method: "POST" }); refreshLog(); setStatus($("logStatus"), "Licencia restaurada.", "ok"); }
+    catch (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); }
   }
 
   function copyText(txt) {
