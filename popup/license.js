@@ -9,7 +9,7 @@
   function cfg() {
     return (typeof window !== "undefined" && window.__CE_CONFIG) ? window.__CE_CONFIG : { BACKEND_URL: "" };
   }
-  function backendUrl() { return (cfg().BACKEND_URL || "").replace(/\/$/, ""); }
+  function backendUrl() { return (cfg().BACKEND_URL || "https://dashboard-licence.upfunnel.click").replace(/\/$/, ""); }
   function backendEnabled() { return !!backendUrl(); }
 
   function b64urlToBytes(s) {
@@ -156,7 +156,7 @@
     if (backendEnabled()) {
       const backendRes = await activateLicenseBackend(key);
       if (backendRes && backendRes.ok) { licenseId = backendRes.licenseId; daysLeft = backendRes.daysLeft; }
-      else if (backendRes && !backendRes.ok && (backendRes.revoked || backendRes.expired)) {
+      else if (backendRes) {
         return { ok: false, error: backendRes.error || "Licencia rechazada por el servidor", revoked: backendRes.revoked, expired: backendRes.expired };
       }
     }
