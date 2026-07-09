@@ -123,7 +123,7 @@
       init();
     } else {
       el.className = "status error";
-      el.innerHTML = res.error || "Licencia inválida";
+      el.innerHTML = "¿No tienes licencia? <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Actívala aquí</a>";
     }
   });
 
