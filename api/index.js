@@ -90,6 +90,7 @@ async function buildSignedLicense(email, wa, startDateIso, endDateIso) {
 async function verifyLicenseRaw(licenseKey) {
   try {
     if (!licenseKey) return { ok: false, error: "Clave vacía" };
+    await loadKeyPair();
     const bin = Buffer.from(licenseKey.trim(), "base64url").toString("binary");
     const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
     if (!json.p || !json.s) return { ok: false, error: "Formato inválido" };
@@ -164,7 +165,8 @@ app.post("/api/license/check", async function (req, res) {
     }
     if (!license) license = await db.findRevokedByEmail(verifyRes.payload.email);
     if (!license) return res.status(404).json({ ok: false, error: "Licencia no registrada en el servidor" });
-    if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada", revoked: true });
+    if (license.revoked) { console.log("[CHECK] License " + license.id + " is REVOKED"); return res.status(403).json({ ok: false, error: "Licencia revocada", revoked: true }); }
+    console.log("[CHECK] License " + license.id + " is active, expired=" + (new Date() > license.end_date));
     res.json({ ok: true, payload: verifyRes.payload, daysLeft: verifyRes.daysLeft, licenseId: license.id, revoked: false });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
@@ -298,8 +300,8 @@ app.use(function (req, res) { res.status(404).json({ error: "Endpoint no encontr
 app.use(function (err, req, res, next) { console.error("[ERR]", err); res.status(500).json({ error: "Error interno del servidor" }); });
 
 // ── Warm up key pair on first request ───────────────────────────────
-app.use(function (req, res, next) {
-  if (!keyPair) { loadKeyPair().catch(function (e) { console.error("[WARM]", e); }); }
+app.use(async function (req, res, next) {
+  if (!keyPair) { try { await loadKeyPair(); } catch (e) { console.error("[WARM]", e); } }
   next();
 });
 
