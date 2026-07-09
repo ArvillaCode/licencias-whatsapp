@@ -1,13 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, type AuthUser } from '../api/auth';
 import { ApiError } from '../api/client';
-import type { PermissionKey } from '../lib/permissions';
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   isAdmin: boolean;
-  can: (permission: PermissionKey) => boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -37,11 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const isAdmin = user?.role === 'ADMIN';
-  const can = (permission: PermissionKey) => isAdmin || !!user?.permissions?.includes(permission);
 
-  return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, can, login, logout }}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, loading, isAdmin, login, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

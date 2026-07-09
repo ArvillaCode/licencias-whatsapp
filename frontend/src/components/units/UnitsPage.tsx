@@ -12,9 +12,9 @@ import { UnitDetailModal } from '../bills/UnitDetailModal';
 export function UnitsPage() {
   const { data: units, isLoading, isError } = useUnits();
   const { viewMode } = useUIState();
-  const { can } = useAuth();
-  const canEditUnits = can('units');
-  const canOpen = can('bills');
+  const { isAdmin } = useAuth();
+  const canEditUnits = isAdmin;
+  const canOpen = true;
   const [showCreate, setShowCreate] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 

@@ -1,10 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { ah } from '../lib/asyncHandler';
-import { requirePermission } from '../middleware/auth';
 
 export const dashboardRouter = Router();
-dashboardRouter.use(requirePermission('dashboard'));
 
 // La app empezó a usarse en producción en julio 2026: los meses anteriores nunca se
 // llenaron a propósito y no deben contar como "pendientes".

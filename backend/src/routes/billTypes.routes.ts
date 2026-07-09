@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { backfillBillForNewType } from '../lib/billHelpers';
 import { ah } from '../lib/asyncHandler';
-import { requirePermission } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 
 export const billTypesRouter = Router();
 
@@ -16,7 +16,7 @@ billTypesRouter.get(
 
 billTypesRouter.post(
   '/',
-  requirePermission('catalogs'),
+  requireAdmin,
   ah(async (req, res) => {
     const { name, order } = req.body ?? {};
     if (!name) return res.status(400).json({ error: 'name es requerido' });
@@ -31,7 +31,7 @@ billTypesRouter.post(
 
 billTypesRouter.put(
   '/:id',
-  requirePermission('catalogs'),
+  requireAdmin,
   ah(async (req, res) => {
     const { name, order, active } = req.body ?? {};
     try {
@@ -48,7 +48,7 @@ billTypesRouter.put(
 
 billTypesRouter.delete(
   '/:id',
-  requirePermission('catalogs'),
+  requireAdmin,
   ah(async (req, res) => {
     try {
       await prisma.billType.update({ where: { id: Number(req.params.id) }, data: { active: false } });

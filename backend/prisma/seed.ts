@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { createBillsForUnit } from '../src/lib/billHelpers';
-import { PERMISSION_KEYS } from '../src/lib/permissions';
 
 const prisma = new PrismaClient();
 
@@ -44,16 +43,17 @@ async function main() {
   }
 
   const adminEmail = (process.env.ADMIN_EMAIL ?? 'admin@example.com').toLowerCase();
+  const adminName = process.env.ADMIN_NAME ?? 'Administrador';
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin123';
   const passwordHash = await bcrypt.hash(adminPassword, 10);
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { role: 'ADMIN', permissions: [...PERMISSION_KEYS], active: true },
+    update: { role: 'ADMIN', name: adminName, active: true },
     create: {
       email: adminEmail,
+      name: adminName,
       passwordHash,
       role: 'ADMIN',
-      permissions: [...PERMISSION_KEYS],
       active: true,
     },
   });

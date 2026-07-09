@@ -3,7 +3,6 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma';
 import { ah } from '../lib/asyncHandler';
 import { requireAdmin, type AuthedRequest } from '../middleware/auth';
-import { sanitizePermissions } from '../lib/permissions';
 import { generatePassword } from '../lib/password';
 
 export const usersRouter = Router();
@@ -13,8 +12,8 @@ usersRouter.use(requireAdmin);
 const publicUser = {
   id: true,
   email: true,
+  name: true,
   role: true,
-  permissions: true,
   active: true,
   createdAt: true,
 } as const;
@@ -26,7 +25,7 @@ usersRouter.get(
   ah(async (_req, res) => {
     const users = await prisma.user.findMany({
       select: publicUser,
-      orderBy: [{ role: 'asc' }, { email: 'asc' }],
+      orderBy: [{ role: 'asc' }, { name: 'asc' }],
     });
     res.json(users);
   })
@@ -36,15 +35,18 @@ usersRouter.post(
   '/',
   ah(async (req, res) => {
     const email = String(req.body?.email ?? '').trim().toLowerCase();
+    const name = String(req.body?.name ?? '').trim();
     if (!EMAIL_RE.test(email)) {
       return res.status(400).json({ error: 'Correo electrónico no válido' });
     }
-    const permissions = sanitizePermissions(req.body?.permissions);
+    if (!name) {
+      return res.status(400).json({ error: 'El nombre es requerido' });
+    }
     const password = generatePassword();
     const passwordHash = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { email, passwordHash, role: 'MEMBER', permissions, active: true },
+      data: { email, name, passwordHash, role: 'USER', active: true },
       select: publicUser,
     });
 
@@ -54,16 +56,14 @@ usersRouter.post(
 );
 
 usersRouter.put(
-  '/:id/permissions',
+  '/:id',
   ah(async (req, res) => {
     const id = Number(req.params.id);
-    const permissions = sanitizePermissions(req.body?.permissions);
+    const name = String(req.body?.name ?? '').trim();
+    if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
     const target = await prisma.user.findUnique({ where: { id } });
     if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
-    if (target.role === 'ADMIN') {
-      return res.status(400).json({ error: 'El administrador siempre tiene todos los permisos' });
-    }
-    const user = await prisma.user.update({ where: { id }, data: { permissions }, select: publicUser });
+    const user = await prisma.user.update({ where: { id }, data: { name }, select: publicUser });
     res.json(user);
   })
 );

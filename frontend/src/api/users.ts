@@ -1,11 +1,10 @@
 import { api } from './client';
-import type { PermissionKey } from '../lib/permissions';
 
 export interface ManagedUser {
   id: number;
   email: string;
-  role: 'ADMIN' | 'MEMBER';
-  permissions: PermissionKey[];
+  name: string;
+  role: 'ADMIN' | 'USER';
   active: boolean;
   createdAt: string;
 }
@@ -17,10 +16,8 @@ export interface CreatedUser {
 
 export const usersApi = {
   list: () => api.get<ManagedUser[]>('/users'),
-  create: (email: string, permissions: PermissionKey[]) =>
-    api.post<CreatedUser>('/users', { email, permissions }),
-  updatePermissions: (id: number, permissions: PermissionKey[]) =>
-    api.put<ManagedUser>(`/users/${id}/permissions`, { permissions }),
+  create: (email: string, name: string) => api.post<CreatedUser>('/users', { email, name }),
+  updateName: (id: number, name: string) => api.put<ManagedUser>(`/users/${id}`, { name }),
   resetPassword: (id: number) => api.post<{ password: string }>(`/users/${id}/reset-password`),
   setActive: (id: number, active: boolean) => api.put<ManagedUser>(`/users/${id}/active`, { active }),
   remove: (id: number) => api.delete<void>(`/users/${id}`),

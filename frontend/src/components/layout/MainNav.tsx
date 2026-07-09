@@ -2,11 +2,11 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function MainNav({ collapsed }: { collapsed: boolean }) {
-  const { can, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
   const items = [
-    { to: '/', label: 'Dashboard', icon: '📊', end: true, show: can('dashboard') },
-    { to: '/unidades', label: 'Unidades', icon: '🏢', end: false, show: can('units') || can('bills') },
+    { to: '/', label: 'Dashboard', icon: '📊', end: true, show: true },
+    { to: '/unidades', label: 'Unidades', icon: '🏢', end: false, show: true },
     { to: '/usuarios', label: 'Usuarios', icon: '👤', end: false, show: isAdmin },
   ].filter((item) => item.show);
 

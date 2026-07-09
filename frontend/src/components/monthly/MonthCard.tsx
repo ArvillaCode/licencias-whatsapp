@@ -1,4 +1,5 @@
 import type { MonthlyRecord } from '../../types/models';
+import { formatCOP } from '../../lib/currency';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -36,7 +37,7 @@ export function MonthCard({
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor }} />
       {record.amountPaid != null && (
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-          {record.amountPaid.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+          {formatCOP(record.amountPaid)}
         </span>
       )}
       {record.amountPaid == null && record.paidAt != null && (

@@ -2,13 +2,12 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { ensureMonthlyRecordsForYear } from '../lib/billHelpers';
 import { ah } from '../lib/asyncHandler';
-import { requirePermission } from '../middleware/auth';
+import { isAdmin, type AuthedRequest } from '../middleware/auth';
 
 export const monthlyRecordsRouter = Router();
 
 monthlyRecordsRouter.get(
   '/bills/:billId/monthly-records',
-  requirePermission('bills'),
   ah(async (req, res) => {
     const billId = Number(req.params.billId);
     const year = Number(req.query.year) || new Date().getFullYear();
@@ -24,7 +23,6 @@ monthlyRecordsRouter.get(
 
 monthlyRecordsRouter.get(
   '/monthly-records/:id',
-  requirePermission('bills'),
   ah(async (req, res) => {
     const record = await prisma.monthlyRecord.findUnique({
       where: { id: Number(req.params.id) },
@@ -37,14 +35,15 @@ monthlyRecordsRouter.get(
 
 monthlyRecordsRouter.put(
   '/monthly-records/:id',
-  requirePermission('bills'),
-  ah(async (req, res) => {
+  ah(async (req: AuthedRequest, res) => {
     const { responsible, amountPaid, paymentMethod, paidAt, notes } = req.body ?? {};
+    // El usuario (no admin) siempre queda como responsable con su propio nombre.
+    const responsibleValue = isAdmin(req.authUser) ? responsible : req.authUser?.name || null;
     try {
       const record = await prisma.monthlyRecord.update({
         where: { id: Number(req.params.id) },
         data: {
-          responsible,
+          responsible: responsibleValue,
           amountPaid: amountPaid === undefined || amountPaid === null || amountPaid === '' ? null : Number(amountPaid),
           paymentMethod,
           paidAt: paidAt ? new Date(paidAt) : null,

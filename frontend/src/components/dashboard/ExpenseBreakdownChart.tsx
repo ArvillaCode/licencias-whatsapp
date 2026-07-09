@@ -1,5 +1,6 @@
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { colorForIndex } from '../../styles/chartPalette';
+import { formatCOP } from '../../lib/currency';
 
 export function ExpenseBreakdownChart({ data }: { data: Array<{ name: string; total: number }> }) {
   const hasData = data.some((d) => d.total > 0);
@@ -30,6 +31,7 @@ export function ExpenseBreakdownChart({ data }: { data: Array<{ name: string; to
               ))}
             </Pie>
             <Tooltip
+              formatter={(v) => formatCOP(Number(v))}
               contentStyle={{
                 background: 'var(--color-bg-elevated)',
                 border: '1px solid var(--color-border)',

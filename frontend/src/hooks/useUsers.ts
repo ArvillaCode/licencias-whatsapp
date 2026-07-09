@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../api/users';
-import type { PermissionKey } from '../lib/permissions';
 
 const USERS_KEY = ['users'];
 
@@ -11,17 +10,15 @@ export function useUsers() {
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ email, permissions }: { email: string; permissions: PermissionKey[] }) =>
-      usersApi.create(email, permissions),
+    mutationFn: ({ email, name }: { email: string; name: string }) => usersApi.create(email, name),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   });
 }
 
-export function useUpdateUserPermissions() {
+export function useUpdateUserName() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, permissions }: { id: number; permissions: PermissionKey[] }) =>
-      usersApi.updatePermissions(id, permissions),
+    mutationFn: ({ id, name }: { id: number; name: string }) => usersApi.updateName(id, name),
     onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   });
 }

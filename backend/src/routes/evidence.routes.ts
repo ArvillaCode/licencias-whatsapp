@@ -6,7 +6,6 @@ import { del, put } from '@vercel/blob';
 import { prisma } from '../lib/prisma';
 import { uploadEvidence, UPLOAD_ROOT } from '../middleware/upload';
 import { ah } from '../lib/asyncHandler';
-import { requirePermission } from '../middleware/auth';
 
 export const evidenceRouter = Router();
 
@@ -14,7 +13,6 @@ const useBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
 
 evidenceRouter.get(
   '/monthly-records/:id/evidence',
-  requirePermission('bills'),
   ah(async (req, res) => {
     const evidences = await prisma.evidence.findMany({
       where: { monthlyRecordId: Number(req.params.id) },
@@ -26,7 +24,6 @@ evidenceRouter.get(
 
 evidenceRouter.post(
   '/monthly-records/:id/evidence',
-  requirePermission('bills'),
   uploadEvidence.array('files', 10),
   ah(async (req, res) => {
     const monthlyRecordId = Number(req.params.id);
@@ -73,7 +70,6 @@ evidenceRouter.post(
 
 evidenceRouter.delete(
   '/evidence/:id',
-  requirePermission('bills'),
   ah(async (req, res) => {
     const evidence = await prisma.evidence.findUnique({ where: { id: Number(req.params.id) } });
     if (!evidence) return res.status(404).json({ error: 'Evidencia no encontrada' });

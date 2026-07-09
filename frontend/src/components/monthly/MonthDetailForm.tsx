@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { MonthlyRecord } from '../../types/models';
 import { paymentMethodsHooks, responsiblesHooks } from '../../hooks/useCatalogs';
 import { useDeleteEvidence, useUpdateMonthlyRecord, useUploadEvidence } from '../../hooks/useMonthlyRecords';
+import { useAuth } from '../../contexts/AuthContext';
 import { EvidenceUploader } from './EvidenceUploader';
 
 const MONTH_NAMES = [
@@ -15,9 +16,13 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
   const deleteEvidence = useDeleteEvidence(billId, year);
   const { data: paymentMethods } = paymentMethodsHooks.useList();
   const { data: responsibles } = responsiblesHooks.useList();
+  const { user, isAdmin } = useAuth();
+
+  // El usuario (no admin) siempre queda como responsable con su propio nombre.
+  const forcedResponsible = isAdmin ? null : user?.name ?? '';
 
   const [paidAt, setPaidAt] = useState(record.paidAt ? record.paidAt.slice(0, 10) : '');
-  const [responsible, setResponsible] = useState(record.responsible ?? '');
+  const [responsible, setResponsible] = useState(forcedResponsible ?? record.responsible ?? '');
   const [amountPaid, setAmountPaid] = useState(record.amountPaid?.toString() ?? '');
   const [paymentMethod, setPaymentMethod] = useState(record.paymentMethod ?? '');
   const [justSaved, setJustSaved] = useState(false);
@@ -25,7 +30,7 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
 
   useEffect(() => {
     setPaidAt(record.paidAt ? record.paidAt.slice(0, 10) : '');
-    setResponsible(record.responsible ?? '');
+    setResponsible(forcedResponsible ?? record.responsible ?? '');
     setAmountPaid(record.amountPaid?.toString() ?? '');
     setPaymentMethod(record.paymentMethod ?? '');
     setJustSaved(false);
@@ -92,17 +97,21 @@ export function MonthDetailForm({ record, billId, year }: { record: MonthlyRecor
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.9rem' }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
-            Responsable *
+            Responsable * {!isAdmin && <span style={{ textTransform: 'none' }}>(tú)</span>}
           </span>
           <input
             className="input"
-            list="responsibles-list"
+            list={isAdmin ? 'responsibles-list' : undefined}
             value={responsible}
             onChange={(e) => setResponsible(e.target.value)}
+            disabled={!isAdmin}
+            title={!isAdmin ? 'El responsable eres tú y no se puede cambiar' : undefined}
           />
-          <datalist id="responsibles-list">
-            {responsibles?.filter((r) => r.active).map((r) => <option key={r.id} value={r.name} />)}
-          </datalist>
+          {isAdmin && (
+            <datalist id="responsibles-list">
+              {responsibles?.filter((r) => r.active).map((r) => <option key={r.id} value={r.name} />)}
+            </datalist>
+          )}
         </label>
 
         <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>

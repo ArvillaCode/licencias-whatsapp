@@ -13,9 +13,9 @@ const EDITABLE_DATA_ITEMS = [
 
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, mobileMenuOpen, setMobileMenuOpen } = useUIState();
-  const { user, logout, can } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const [showEditable, setShowEditable] = useState(true);
-  const showCatalogs = can('catalogs');
+  const showCatalogs = isAdmin;
 
   return (
     <aside

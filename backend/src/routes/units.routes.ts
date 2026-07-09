@@ -2,10 +2,9 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { createBillsForUnit } from '../lib/billHelpers';
 import { ah } from '../lib/asyncHandler';
-import { requirePermission } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 
 export const unitsRouter = Router();
-unitsRouter.use(requirePermission('units'));
 
 unitsRouter.get(
   '/',
@@ -17,6 +16,7 @@ unitsRouter.get(
 
 unitsRouter.put(
   '/reorder',
+  requireAdmin,
   ah(async (req, res) => {
     const { orderedIds } = req.body ?? {};
     if (!Array.isArray(orderedIds) || orderedIds.some((id) => typeof id !== 'number')) {
@@ -45,6 +45,7 @@ unitsRouter.get(
 
 unitsRouter.post(
   '/',
+  requireAdmin,
   ah(async (req, res) => {
     const { address, apartmentNo, name, tenantName } = req.body ?? {};
     if (!address || !apartmentNo) {
@@ -61,6 +62,7 @@ unitsRouter.post(
 
 unitsRouter.put(
   '/:id',
+  requireAdmin,
   ah(async (req, res) => {
     const { address, apartmentNo, name, tenantName } = req.body ?? {};
     try {
@@ -77,6 +79,7 @@ unitsRouter.put(
 
 unitsRouter.delete(
   '/:id',
+  requireAdmin,
   ah(async (req, res) => {
     try {
       await prisma.unit.delete({ where: { id: Number(req.params.id) } });

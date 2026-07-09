@@ -4,6 +4,7 @@ import { KpiTile } from './KpiTile';
 import { MonthlyTrendChart } from './MonthlyTrendChart';
 import { ExpenseBreakdownChart } from './ExpenseBreakdownChart';
 import { UnitComparisonChart } from './UnitComparisonChart';
+import { formatCOP } from '../../lib/currency';
 
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = [currentYear - 1, currentYear, currentYear + 1];
@@ -47,7 +48,7 @@ export function DashboardView() {
             <KpiTile
               index={1}
               label={`Total pagado este mes`}
-              value={data.kpis.totalPaidThisMonth.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+              value={formatCOP(data.kpis.totalPaidThisMonth)}
             />
             <KpiTile index={2} label="Próximos vencimientos" value={String(data.kpis.upcomingDueDates.length)} />
           </div>

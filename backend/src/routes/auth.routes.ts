@@ -29,7 +29,7 @@ authRouter.post(
       secure: !!process.env.VERCEL,
       maxAge: AUTH_COOKIE_MAX_AGE_MS,
     });
-    res.json({ id: user.id, email: user.email, role: user.role, permissions: user.permissions });
+    res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
   })
 );
 
@@ -47,6 +47,6 @@ authRouter.get(
   requireAuth,
   ah(async (req: AuthedRequest, res) => {
     const u = req.authUser!;
-    res.json({ id: u.id, email: u.email, role: u.role, permissions: u.permissions });
+    res.json({ id: u.id, email: u.email, name: u.name, role: u.role });
   })
 );

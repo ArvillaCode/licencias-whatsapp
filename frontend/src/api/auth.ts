@@ -1,11 +1,10 @@
 import { api } from './client';
-import type { PermissionKey } from '../lib/permissions';
 
 export interface AuthUser {
   id: number;
   email: string;
-  role: 'ADMIN' | 'MEMBER';
-  permissions: PermissionKey[];
+  name: string;
+  role: 'ADMIN' | 'USER';
 }
 
 export const authApi = {

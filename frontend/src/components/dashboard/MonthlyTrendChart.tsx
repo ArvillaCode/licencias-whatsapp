@@ -1,5 +1,6 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { colorForIndex } from '../../styles/chartPalette';
+import { formatCOP } from '../../lib/currency';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -12,7 +13,7 @@ function formatCompact(value: number): string {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+  return formatCOP(value);
 }
 
 export function MonthlyTrendChart({ data, seriesNames }: { data: Array<Record<string, number>>; seriesNames: string[] }) {

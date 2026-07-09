@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { formatCOP } from '../../lib/currency';
 
 export function UnitComparisonChart({ data }: { data: Array<{ unit: string; total: number }> }) {
   return (
@@ -18,6 +19,7 @@ export function UnitComparisonChart({ data }: { data: Array<{ unit: string; tota
             width={150}
           />
           <Tooltip
+            formatter={(v) => formatCOP(Number(v))}
             contentStyle={{
               background: 'var(--color-bg-elevated)',
               border: '1px solid var(--color-border)',
