@@ -4,7 +4,19 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Unit } from '../../types/models';
 import { useUnitEditor } from '../../hooks/useUnitEditor';
 
-export function UnitCard({ unit, onOpen, index = 0 }: { unit: Unit; onOpen: (unit: Unit) => void; index?: number }) {
+export function UnitCard({
+  unit,
+  onOpen,
+  index = 0,
+  canEditUnits = true,
+  canOpen = true,
+}: {
+  unit: Unit;
+  onOpen: (unit: Unit) => void;
+  index?: number;
+  canEditUnits?: boolean;
+  canOpen?: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: unit.id });
   const editor = useUnitEditor(unit);
   const [entering, setEntering] = useState(true);
@@ -18,10 +30,10 @@ export function UnitCard({ unit, onOpen, index = 0 }: { unit: Unit; onOpen: (uni
     <div
       ref={setNodeRef}
       className={`card-surface${entering ? ' animate-fade-in-up' : ''}`}
-      onClick={() => !editor.isEditing && onOpen(unit)}
+      onClick={() => !editor.isEditing && canOpen && onOpen(unit)}
       style={{
         padding: '1.1rem 1.2rem',
-        cursor: editor.isEditing ? 'default' : 'pointer',
+        cursor: editor.isEditing || !canOpen ? 'default' : 'pointer',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.6rem',
@@ -40,7 +52,7 @@ export function UnitCard({ unit, onOpen, index = 0 }: { unit: Unit; onOpen: (uni
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
-          {!editor.isEditing && (
+          {!editor.isEditing && canEditUnits && (
             <button
               {...attributes}
               {...listeners}
@@ -91,33 +103,35 @@ export function UnitCard({ unit, onOpen, index = 0 }: { unit: Unit; onOpen: (uni
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-          {!editor.isEditing && (
+        {canEditUnits && (
+          <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+            {!editor.isEditing && (
+              <button
+                className="btn"
+                style={{ padding: '0.3rem 0.5rem' }}
+                title="Editar unidad"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  editor.startEdit();
+                }}
+              >
+                ✏️
+              </button>
+            )}
             <button
-              className="btn"
+              className="btn btn-danger"
               style={{ padding: '0.3rem 0.5rem' }}
-              title="Editar unidad"
+              title="Eliminar unidad"
               onClick={(e) => {
                 e.stopPropagation();
-                editor.startEdit();
+                editor.remove();
               }}
+              disabled={editor.deleting}
             >
-              ✏️
+              🗑
             </button>
-          )}
-          <button
-            className="btn btn-danger"
-            style={{ padding: '0.3rem 0.5rem' }}
-            title="Eliminar unidad"
-            onClick={(e) => {
-              e.stopPropagation();
-              editor.remove();
-            }}
-            disabled={editor.deleting}
-          >
-            🗑
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.6rem' }}>

@@ -13,8 +13,9 @@ const EDITABLE_DATA_ITEMS = [
 
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, mobileMenuOpen, setMobileMenuOpen } = useUIState();
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const [showEditable, setShowEditable] = useState(true);
+  const showCatalogs = can('catalogs');
 
   return (
     <aside
@@ -52,6 +53,7 @@ export function Sidebar() {
 
       <MainNav collapsed={sidebarCollapsed} />
 
+      {showCatalogs && (
       <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.75rem' }}>
         {!sidebarCollapsed && (
           <button
@@ -98,6 +100,7 @@ export function Sidebar() {
           </nav>
         )}
       </div>
+      )}
 
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <ThemeToggle collapsed={sidebarCollapsed} />

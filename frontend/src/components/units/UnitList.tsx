@@ -5,17 +5,27 @@ import type { Unit } from '../../types/models';
 import { useReorderUnits } from '../../hooks/useUnits';
 import { useUnitEditor } from '../../hooks/useUnitEditor';
 
-function UnitRow({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) => void }) {
+function UnitRow({
+  unit,
+  onOpen,
+  canEditUnits,
+  canOpen,
+}: {
+  unit: Unit;
+  onOpen: (unit: Unit) => void;
+  canEditUnits: boolean;
+  canOpen: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: unit.id });
   const editor = useUnitEditor(unit);
 
   return (
     <tr
       ref={setNodeRef}
-      onClick={() => !editor.isEditing && onOpen(unit)}
+      onClick={() => !editor.isEditing && canOpen && onOpen(unit)}
       style={{
         borderBottom: '1px solid var(--color-border)',
-        cursor: editor.isEditing ? 'default' : 'pointer',
+        cursor: editor.isEditing || !canOpen ? 'default' : 'pointer',
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
@@ -31,7 +41,7 @@ function UnitRow({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) => void })
       }}
     >
       <td style={{ padding: '0.6rem 0.4rem', width: 28 }}>
-        {!editor.isEditing && (
+        {!editor.isEditing && canEditUnits && (
           <button
             {...attributes}
             {...listeners}
@@ -114,7 +124,7 @@ function UnitRow({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) => void })
               {editor.saving ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
-        ) : (
+        ) : canEditUnits ? (
           <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
             <button
               className="btn"
@@ -140,13 +150,23 @@ function UnitRow({ unit, onOpen }: { unit: Unit; onOpen: (unit: Unit) => void })
               🗑
             </button>
           </div>
-        )}
+        ) : null}
       </td>
     </tr>
   );
 }
 
-export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit) => void }) {
+export function UnitList({
+  units,
+  onOpen,
+  canEditUnits = true,
+  canOpen = true,
+}: {
+  units: Unit[];
+  onOpen: (unit: Unit) => void;
+  canEditUnits?: boolean;
+  canOpen?: boolean;
+}) {
   const reorderUnits = useReorderUnits();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -193,7 +213,7 @@ export function UnitList({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
           <SortableContext items={units.map((u) => u.id)} strategy={verticalListSortingStrategy}>
             <tbody>
               {units.map((unit) => (
-                <UnitRow key={unit.id} unit={unit} onOpen={onOpen} />
+                <UnitRow key={unit.id} unit={unit} onOpen={onOpen} canEditUnits={canEditUnits} canOpen={canOpen} />
               ))}
             </tbody>
           </SortableContext>

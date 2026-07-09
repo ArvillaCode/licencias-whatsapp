@@ -1,14 +1,18 @@
 import { NavLink } from 'react-router-dom';
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: '📊', end: true },
-  { to: '/unidades', label: 'Unidades', icon: '🏢', end: false },
-];
+import { useAuth } from '../../contexts/AuthContext';
 
 export function MainNav({ collapsed }: { collapsed: boolean }) {
+  const { can, isAdmin } = useAuth();
+
+  const items = [
+    { to: '/', label: 'Dashboard', icon: '📊', end: true, show: can('dashboard') },
+    { to: '/unidades', label: 'Unidades', icon: '🏢', end: false, show: can('units') || can('bills') },
+    { to: '/usuarios', label: 'Usuarios', icon: '👤', end: false, show: isAdmin },
+  ].filter((item) => item.show);
+
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-      {NAV_ITEMS.map((item) => (
+      {items.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}

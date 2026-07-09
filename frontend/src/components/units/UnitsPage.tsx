@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useUnits } from '../../hooks/useUnits';
 import { useUIState } from '../../contexts/UIStateContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { UnitGrid } from './UnitGrid';
 import { UnitList } from './UnitList';
 import { ViewToggle } from './ViewToggle';
@@ -11,6 +12,9 @@ import { UnitDetailModal } from '../bills/UnitDetailModal';
 export function UnitsPage() {
   const { data: units, isLoading, isError } = useUnits();
   const { viewMode } = useUIState();
+  const { can } = useAuth();
+  const canEditUnits = can('units');
+  const canOpen = can('bills');
   const [showCreate, setShowCreate] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
 
@@ -25,9 +29,11 @@ export function UnitsPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <ViewToggle />
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-            + Nueva unidad
-          </button>
+          {canEditUnits && (
+            <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+              + Nueva unidad
+            </button>
+          )}
         </div>
       </div>
 
@@ -36,9 +42,9 @@ export function UnitsPage() {
 
       {units &&
         (viewMode === 'cards' ? (
-          <UnitGrid units={units} onOpen={setSelectedUnit} />
+          <UnitGrid units={units} onOpen={setSelectedUnit} canEditUnits={canEditUnits} canOpen={canOpen} />
         ) : (
-          <UnitList units={units} onOpen={setSelectedUnit} />
+          <UnitList units={units} onOpen={setSelectedUnit} canEditUnits={canEditUnits} canOpen={canOpen} />
         ))}
 
       {showCreate && <UnitFormModal onClose={() => setShowCreate(false)} />}

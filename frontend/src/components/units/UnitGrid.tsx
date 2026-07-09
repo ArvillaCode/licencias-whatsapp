@@ -4,7 +4,17 @@ import type { Unit } from '../../types/models';
 import { UnitCard } from './UnitCard';
 import { useReorderUnits } from '../../hooks/useUnits';
 
-export function UnitGrid({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit) => void }) {
+export function UnitGrid({
+  units,
+  onOpen,
+  canEditUnits = true,
+  canOpen = true,
+}: {
+  units: Unit[];
+  onOpen: (unit: Unit) => void;
+  canEditUnits?: boolean;
+  canOpen?: boolean;
+}) {
   const reorderUnits = useReorderUnits();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -31,7 +41,14 @@ export function UnitGrid({ units, onOpen }: { units: Unit[]; onOpen: (unit: Unit
           }}
         >
           {units.map((unit, index) => (
-            <UnitCard key={unit.id} unit={unit} onOpen={onOpen} index={index} />
+            <UnitCard
+              key={unit.id}
+              unit={unit}
+              onOpen={onOpen}
+              index={index}
+              canEditUnits={canEditUnits}
+              canOpen={canOpen}
+            />
           ))}
         </div>
       </SortableContext>
