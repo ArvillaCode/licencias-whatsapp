@@ -59,7 +59,7 @@
     if (res.valid) { showMainApp(); return; }
     if (res.revoked) showLicenseGate("Tu licencia fue revocada por el administrador. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20fue%20revocada' target='_blank'>Contacta al administrador</a>.");
     else if (res.expired) showLicenseGate("Tu licencia expiró el " + (res.payload && res.payload.endDate ? res.payload.endDate.slice(0, 10) : "?") + ". <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20renovar%20mi%20licencia' target='_blank'>Solicita renovación aquí</a>.");
-    else showLicenseGate("No hay licencia activa. Introduce tu clave para activar la extensión.");
+    else showLicenseGate("No hay licencia activa. Introduce tu clave o <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>solicita una aquí</a>.");
   }
 
   $("activateBtn").addEventListener("click", async function () {

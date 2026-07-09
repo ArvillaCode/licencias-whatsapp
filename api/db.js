@@ -34,6 +34,11 @@ async function countUsers() {
 }
 
 // ── Licenses ───────────────────────────────────────────────────────
+async function findRevokedByEmail(email) {
+  const res = await query("SELECT * FROM licenses WHERE email = $1 AND revoked = TRUE LIMIT 1", [email]);
+  return res.rows[0] || null;
+}
+
 async function findLicenseByPayload(email, whatsapp, startDate, endDate) {
   const res = await query(
     "SELECT * FROM licenses WHERE email = $1 AND whatsapp = $2 AND start_date = $3 AND end_date = $4 LIMIT 1",
@@ -99,6 +104,7 @@ module.exports = {
   findUserByUsername,
   createUser,
   countUsers,
+  findRevokedByEmail,
   findLicenseByPayload,
   findLicenseById,
   createLicense,
