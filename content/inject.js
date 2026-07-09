@@ -3,6 +3,10 @@
 
   const CHUNK_NAME = "webpackChunkwhatsapp_web_client";
   const NS = "__waextract";
+  // Generación de esta instancia. Si el content script inyecta inject.js más de una
+  // vez (p. ej. tras recargar la extensión sin recargar la página), pueden coexistir
+  // varios listeners; solo el más reciente debe responder para no servir código viejo.
+  const MY_GEN = (window.__waextractGen = (window.__waextractGen || 0) + 1);
   const LOG = function () { try { console.log.apply(console, ["[WAExtract]"].concat(Array.from(arguments))); } catch (e) {} };
   let moduleRequire = null;
   let moduleCache = {};
@@ -630,6 +634,7 @@
 
   window.addEventListener("message", function (event) {
     if (event.source !== window) return;
+    if (window.__waextractGen !== MY_GEN) return; // una instancia más nueva tomó el control
     const data = event.data;
     if (!data || data.ns !== NS || !data.id) return;
     if (data.from !== "content") return;

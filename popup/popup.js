@@ -550,16 +550,33 @@
 
   /* ── MASS MESSAGING ── */
 
-  // Tab navigation
+  // Tab navigation (la pestaña activa se recuerda entre aperturas del popup)
+  function activateTab(name) {
+    document.querySelectorAll(".tab").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-page") === name);
+    });
+    document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+    var page = $("page-" + name);
+    if (page) page.classList.add("active");
+  }
   document.querySelectorAll(".tab").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (b) { b.classList.remove("active"); });
-      document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
-      btn.classList.add("active");
-      var page = $("page-" + btn.getAttribute("data-page"));
-      if (page) page.classList.add("active");
+      var name = btn.getAttribute("data-page");
+      activateTab(name);
+      try { chrome.storage.local.set({ ce_active_tab: name }); } catch (e) {}
     });
   });
+  // Al abrir el popup: restaurar la última pestaña usada; si hay un envío en curso,
+  // mostrar directamente la de "Enviar".
+  try {
+    chrome.storage.local.get(["ce_active_tab", "ce_bulk_state"], function (obj) {
+      var bs = obj && obj.ce_bulk_state;
+      var active = (bs && (bs.status === "sending" || bs.status === "paused"))
+        ? "send"
+        : (obj && obj.ce_active_tab);
+      if (active === "send" || active === "extract") activateTab(active);
+    });
+  } catch (e) {}
 
   // Import contacts
   var importedContacts = [];

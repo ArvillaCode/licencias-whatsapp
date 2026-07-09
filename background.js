@@ -11,6 +11,18 @@
 const ALARM = "bulkHeartbeat";
 let waTabId = null;
 
+// Al instalar/actualizar/recargar la extensión, recargar las pestañas de WhatsApp
+// Web para que carguen el content.js / inject.js nuevos. Sin esto, el script
+// inyectado en el MAIN world persiste con la versión vieja hasta recargar a mano
+// (causa del recurrente "this.findImpl..." / "Tipo desconocido: sendText").
+chrome.runtime.onInstalled.addListener(function () {
+  chrome.tabs.query({ url: "https://web.whatsapp.com/*" }).then(function (tabs) {
+    (tabs || []).forEach(function (t) {
+      if (t.id != null) { try { chrome.tabs.reload(t.id); } catch (e) {} }
+    });
+  }).catch(function () {});
+});
+
 function findWaTab() {
   return chrome.tabs.query({ url: "https://web.whatsapp.com/*" })
     .then(function (tabs) { return tabs && tabs.length ? tabs[0].id : null; })
