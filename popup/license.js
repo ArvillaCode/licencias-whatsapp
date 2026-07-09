@@ -106,7 +106,7 @@
         body: JSON.stringify({ license: licenseKey })
       });
       const data = await res.json();
-      if (!res.ok) return { ok: false, error: data.error || ("HTTP " + res.status), expired: !!data.expired };
+      if (!res.ok) return { ok: false, error: data.error || ("HTTP " + res.status), revoked: !!data.revoked, expired: !!data.expired };
       return { ok: true, payload: data.payload, daysLeft: data.daysLeft, licenseId: data.licenseId };
     } catch (e) { return { ok: false, error: "No se pudo conectar al backend: " + (e.message || e) }; }
   }
