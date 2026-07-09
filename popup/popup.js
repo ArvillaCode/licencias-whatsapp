@@ -60,9 +60,9 @@
     const el = $("licenseStatus");
     el.className = "status"; el.innerHTML = "Verificando con el servidor...";
     try {
-      const res = await fetch("https://dashboard-licence.upfunnel.click/api/license/check", {
+      const res = await fetch("https://dashboard-licence.upfunnel.click/api/license/activate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ license: stored.license, payload: stored.payload, licenseId: stored.licenseId || null })
+        body: JSON.stringify({ license: stored.license })
       });
       const data = await res.json();
       if (res.ok && data && data.ok) {
@@ -89,13 +89,8 @@
         showLicenseGate("Tu licencia fue revocada por el administrador. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20fue%20revocada' target='_blank'>Contacta al administrador</a>.");
         return;
       }
-      if (data && data.expired) {
-        chrome.storage.local.remove("ce_active_license", function () {});
-        showLicenseGate("Tu licencia expiró. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20renovar%20mi%20licencia' target='_blank'>Solicita renovación aquí</a>.");
-        return;
-      }
       chrome.storage.local.remove("ce_active_license", function () {});
-      showLicenseGate("Licencia rechazada (" + res.status + "): " + (data && data.error || "desconocido") + ". <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20no%20funciona' target='_blank'>Contacta al administrador</a>.");
+      showLicenseGate((data && data.error) || "Licencia inválida. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20no%20funciona' target='_blank'>Contacta al administrador</a>.");
     } catch (e) {
       showLicenseGate("Error de conexión con el servidor. <a href='https://wa.me/573218101385' target='_blank'>Contacta al administrador</a>.");
     }
