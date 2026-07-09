@@ -311,25 +311,82 @@
       const User = tryRequire("WAWebUser");
       if (User && User.getMe) {
         const me = User.getMe();
-        if (me && me.id) return toPhoneFromWid(me.id);
+        if (me && me.id) {
+          const ph = toPhoneFromWid(me.id);
+          if (ph) return ph;
+        }
       }
       if (User && User.getActiveWid) {
         const wid = User.getActiveWid();
-        if (wid) return toPhoneFromWid(wid);
+        if (wid) {
+          const ph = toPhoneFromWid(wid);
+          if (ph) return ph;
+        }
       }
       const wf = getWidFactory();
+      if (wf && wf.getMeWid) {
+        const myWid = safeCall(function () { return wf.getMeWid(); }, null);
+        if (myWid) {
+          const ph = toPhoneFromWid(myWid);
+          if (ph) return ph;
+        }
+      }
+      if (wf && wf.getDidWid) {
+        const myWid2 = safeCall(function () { return wf.getDidWid(); }, null);
+        if (myWid2) {
+          const ph = toPhoneFromWid(myWid2);
+          if (ph) return ph;
+        }
+      }
       const cols2 = getCollections();
       const Contact = cols2.Contact;
       if (Contact && Contact.getMe) {
         const me = Contact.getMe();
-        if (me && me.id) return toPhoneFromWid(me.id);
+        if (me && me.id) {
+          const ph = toPhoneFromWid(me.id);
+          if (ph) return ph;
+        }
+      }
+      if (Contact && Contact.getModelsArray) {
+        const all = Contact.getModelsArray();
+        const myContact = all.find(function (c) { return c.isMe && c.isMe(); });
+        if (myContact && myContact.id) {
+          const ph = toPhoneFromWid(myContact.id);
+          if (ph) return ph;
+        }
       }
       const chat = safeCall(function () {
         const c = cols.Chat;
         if (!c || !c.getModelsArray) return null;
         return c.getModelsArray().find(function (ch) { return ch.isUser && ch.isUser(); });
       }, null);
-      if (chat && chat.id) return toPhoneFromWid(chat.id);
+      if (chat && chat.id) {
+        const ph = toPhoneFromWid(chat.id);
+        if (ph) return ph;
+      }
+      const myWidFromStore = safeCall(function () {
+        const Store = tryRequire("WAWebStore");
+        if (Store && Store.ConnectedPayload && Store.ConnectedPayload.getMe) {
+          return Store.ConnectedPayload.getMe();
+        }
+        return null;
+      }, null);
+      if (myWidFromStore && myWidFromStore.id) {
+        const ph = toPhoneFromWid(myWidFromStore.id);
+        if (ph) return ph;
+      }
+      const myPhoneFromDOM = safeCall(function () {
+        const meta = document.querySelector('meta[name="description"]');
+        if (meta && meta.content) {
+          const m = meta.content.match(/(\d{10,15})/);
+          if (m) return m[1];
+        }
+        const title = document.title || "";
+        const tm = title.match(/(\d{10,15})/);
+        if (tm) return tm[1];
+        return null;
+      }, null);
+      if (myPhoneFromDOM) return myPhoneFromDOM;
       return null;
     } catch (e) { LOG("getMyPhone error:", e.message); return null; }
   }
