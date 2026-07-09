@@ -141,15 +141,8 @@ app.post("/api/license/activate", async function (req, res) {
     if (!verifyRes.ok) return res.status(400).json({ ok: false, error: verifyRes.error, expired: !!verifyRes.expired });
     const payload = verifyRes.payload;
     let license = await db.findLicenseByPayload(payload.email, payload.whatsapp, payload.startDate, payload.endDate);
-    if (!license) {
-      // Check if this email has a revoked license (reissue changes dates)
-      const revokedByEmail = await db.findRevokedByEmail(payload.email);
-      if (revokedByEmail) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador" });
-      const id = nanoid(12);
-      const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress || null;
-      await db.createLicense(id, payload.email, payload.whatsapp, payload.startDate, payload.endDate, licenseKey, ip);
-      license = await db.findLicenseById(id);
-    }
+    if (!license) license = await db.findRevokedByEmail(payload.email);
+    if (!license) return res.status(404).json({ ok: false, error: "Esta clave no fue emitida por el administrador. Solicita una en wa.me/573218101385" });
     if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador" });
     await db.updateLicenseActivation(license.id, req.headers["x-forwarded-for"] || req.socket.remoteAddress || null);
     res.json({ ok: true, payload, daysLeft: verifyRes.daysLeft, licenseId: license.id, revoked: false });
