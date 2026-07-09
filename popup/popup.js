@@ -29,7 +29,6 @@
   function showMainApp() {
     $("licenseGate").classList.add("hidden");
     $("mainApp").classList.remove("hidden");
-    refreshLicenseInfo();
   }
 
   async function refreshLicenseInfo() {
@@ -56,28 +55,50 @@
       showLicenseGate("");
       return;
     }
-    const res = await window.__CELicense.checkStored(true);
-    if (res.valid && res.payload) {
-      const tab = await getWaTab();
-      if (tab) {
-        const phoneRes = await new Promise(function (r) {
-          chrome.tabs.sendMessage(tab.id, { cmd: "getMyPhone" }, function (resp) { r(resp || {}); });
-        });
-        if (phoneRes && phoneRes.phone) {
-          const licPhone = (res.payload.whatsapp || "").replace(/[^0-9]/g, "");
-          const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
-          if (licPhone !== waPhone) {
-            showLicenseGate("Esta licencia es para otro número de WhatsApp. <a href='https://wa.me/573218101385' target='_blank'>Solicita una licencia para tu número aquí</a>.");
-            return;
+    const stored = await new Promise(function (r) { chrome.storage.local.get("ce_active_license", function (o) { r(o && o.ce_active_license); }); });
+    if (!stored || !stored.license) { showLicenseGate("No hay licencia activa. Introduce tu clave o <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>solicita una aquí</a>."); return; }
+    const el = $("licenseStatus");
+    el.className = "status"; el.innerHTML = "Verificando con el servidor...";
+    try {
+      const res = await fetch("https://dashboard-licence.upfunnel.click/api/license/check", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ license: stored.license, payload: stored.payload, licenseId: stored.licenseId || null })
+      });
+      const data = await res.json();
+      if (res.ok && data && data.ok) {
+        const tab = await getWaTab();
+        if (tab) {
+          const phoneRes = await new Promise(function (r) {
+            chrome.tabs.sendMessage(tab.id, { cmd: "getMyPhone" }, function (resp) { r(resp || {}); });
+          });
+          if (phoneRes && phoneRes.phone) {
+            const licPhone = (data.payload && data.payload.whatsapp || stored.payload.whatsapp || "").replace(/[^0-9]/g, "");
+            const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
+            if (licPhone !== waPhone) {
+              showLicenseGate("Esta licencia es para otro número de WhatsApp. <a href='https://wa.me/573218101385' target='_blank'>Solicita una licencia para tu número aquí</a>.");
+              return;
+            }
           }
         }
+        await new Promise(function (r) { chrome.storage.local.set({ ce_active_license: { license: stored.license, payload: data.payload || stored.payload, daysLeft: data.daysLeft, licenseId: data.licenseId, checkedAt: Date.now() } }, r); });
+        showMainApp();
+        return;
       }
-      showMainApp();
-      return;
+      if (data && data.revoked) {
+        chrome.storage.local.remove("ce_active_license", function () {});
+        showLicenseGate("Tu licencia fue revocada por el administrador. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20fue%20revocada' target='_blank'>Contacta al administrador</a>.");
+        return;
+      }
+      if (data && data.expired) {
+        chrome.storage.local.remove("ce_active_license", function () {});
+        showLicenseGate("Tu licencia expiró. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20renovar%20mi%20licencia' target='_blank'>Solicita renovación aquí</a>.");
+        return;
+      }
+      chrome.storage.local.remove("ce_active_license", function () {});
+      showLicenseGate((data && data.error) || "Licencia inválida. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Solicita una nueva aquí</a>.");
+    } catch (e) {
+      showLicenseGate("Error de conexión con el servidor. <a href='https://wa.me/573218101385' target='_blank'>Contacta al administrador</a>.");
     }
-    if (res.revoked) showLicenseGate("Tu licencia fue revocada por el administrador. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20fue%20revocada' target='_blank'>Contacta al administrador</a>.");
-    else if (res.expired) showLicenseGate("Tu licencia expiró el " + (res.payload && res.payload.endDate ? res.payload.endDate.slice(0, 10) : "?") + ". <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20renovar%20mi%20licencia' target='_blank'>Solicita renovación aquí</a>.");
-    else showLicenseGate("No hay licencia activa. Introduce tu clave o <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>solicita una aquí</a>.");
   }
 
   $("activateBtn").addEventListener("click", async function () {
