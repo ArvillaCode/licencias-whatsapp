@@ -547,4 +547,246 @@
   checkLicenseAtStart().then(function () {
     if (!$("licenseGate") || $("licenseGate").classList.contains("hidden")) init();
   }).catch(function () { showLicenseGate("Error al verificar la licencia."); });
+
+  /* ── MASS MESSAGING ── */
+
+  // Tab navigation
+  document.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".tab").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+      btn.classList.add("active");
+      var page = $("page-" + btn.getAttribute("data-page"));
+      if (page) page.classList.add("active");
+    });
+  });
+
+  // Import contacts
+  var importedContacts = [];
+  var sendMode = "extracted";
+
+  document.querySelectorAll("input[name='sendOrigin']").forEach(function (r) {
+    r.addEventListener("change", function () {
+      sendMode = this.value;
+      if (sendMode === "import") {
+        $("sendImportArea").classList.remove("hidden");
+        updateRecipientCount();
+      } else {
+        $("sendImportArea").classList.add("hidden");
+        updateRecipientCount();
+      }
+    });
+  });
+
+  $("sendImportList").addEventListener("input", function () {
+    updateRecipientCount();
+  });
+
+  $("sendFileLink").addEventListener("click", function (e) {
+    e.preventDefault();
+    $("sendFileInput").click();
+  });
+
+  $("sendFileInput").addEventListener("change", function () {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (evt) {
+      var text = evt.target.result;
+      var lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); });
+      var imported = [];
+      lines.forEach(function (l) {
+        var parts = l.split(",");
+        var phone = parts[0].trim().replace(/[^0-9]/g, "");
+        if (phone) {
+          imported.push({ phone: phone, name: parts[1] ? parts[1].trim() : phone });
+        }
+      });
+      importedContacts = imported;
+      var prev = $("sendImportPreview");
+      prev.textContent = imported.length + " contactos importados de " + file.name;
+      prev.classList.remove("hidden");
+      updateRecipientCount();
+    };
+    reader.readAsText(file);
+  });
+
+  function updateRecipientCount() {
+    var count = 0;
+    var preview = "";
+    if (sendMode === "extracted") {
+      count = (rows || []).filter(function (r) { return !!r.phone; }).length;
+      preview = count + " contactos extraídos con teléfono";
+    } else {
+      var list = ($("sendImportList").value || "").split(/\r?\n/).filter(function (l) { return l.trim(); });
+      count = list.length + importedContacts.length;
+      preview = count + " destinatarios";
+    }
+    $("sendRecipientCount").querySelector("strong").textContent = count;
+    $("startBulkBtn").disabled = count < 1 || !$("sendAcceptRisk").checked;
+  }
+
+  function getSendRecipients() {
+    if (sendMode === "extracted") {
+      return (rows || []).filter(function (r) { return !!r.phone; }).map(function (r) {
+        return { name: r.name || "", phone: r.phone || "", pushname: r.pushname || "" };
+      });
+    }
+    var result = [];
+    var list = ($("sendImportList").value || "").split(/\r?\n/).filter(function (l) { return l.trim(); });
+    list.forEach(function (l) {
+      var parts = l.split(",");
+      var phone = parts[0].trim().replace(/[^0-9]/g, "");
+      if (phone) result.push({ name: parts[1] ? parts[1].trim() : phone, phone: phone });
+    });
+    importedContacts.forEach(function (c) {
+      if (!result.find(function (x) { return x.phone === c.phone; })) result.push(c);
+    });
+    return result;
+  }
+
+  function getSpeedOptions() {
+    var speedEl = document.querySelector("input[name='speed']:checked");
+    var speed = speedEl ? speedEl.value : "slow";
+    if (speed === "slow") return { delay: 8, batchSize: 3, batchPause: 180, randomPauses: true };
+    if (speed === "fast") return { delay: 2, batchSize: 10, batchPause: 60, randomPauses: false };
+    return { delay: 5, batchSize: 5, batchPause: 120, randomPauses: true };
+  }
+
+  function setBulkBusy(busy) {
+    var btn = $("startBulkBtn");
+    if (busy) {
+      btn.disabled = true;
+      $("bulkControls").classList.remove("hidden");
+      $("bulkProgress").classList.remove("hidden");
+      $("bulkStats").classList.remove("hidden");
+      $("pauseBulkBtn").classList.remove("hidden");
+      $("resumeBulkBtn").classList.add("hidden");
+    } else {
+      btn.disabled = false;
+      $("bulkControls").classList.add("hidden");
+      $("bulkProgress").classList.add("hidden");
+      $("pauseBulkBtn").classList.remove("hidden");
+      $("resumeBulkBtn").classList.add("hidden");
+    }
+  }
+
+  function setBulkProgress(sent, total, current, failed) {
+    var done = (sent || 0) + (failed || 0);
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    $("bulkBarFill").style.width = pct + "%";
+    $("bulkProgressText").textContent = done + " / " + total + (current ? " — " + current : "");
+    $("bulkSent").textContent = sent || 0;
+    $("bulkFailed").textContent = failed || 0;
+    $("bulkRemaining").textContent = Math.max(0, total - done);
+  }
+
+  function renderBulkErrors(bs) {
+    var log = $("bulkLog");
+    if (bs.errors && bs.errors.length) {
+      log.classList.remove("hidden");
+      log.innerHTML = "<b>Errores (" + bs.errors.length + "):</b><br/>" + bs.errors.map(function (e) {
+        return "• " + (e.contact || "") + ": " + (e.error || "");
+      }).join("<br/>");
+    } else {
+      log.classList.add("hidden");
+    }
+  }
+
+  function applyBulkState(state) {
+    if (!state) return;
+    var bs = state.state;
+    if (!bs) return;
+    if (bs.status === "sending") {
+      setBulkBusy(true);
+      $("bulkStatus").className = "status";
+      $("bulkStatus").textContent = (bs.current || "Enviando mensajes…") + " · " + (bs.sent || 0) + " enviados, " + (bs.failed || 0) + " fallidos";
+      setBulkProgress(bs.sent, bs.total, bs.current, bs.failed);
+      renderBulkErrors(bs);
+    } else if (bs.status === "paused") {
+      setBulkBusy(true);
+      $("pauseBulkBtn").classList.add("hidden");
+      $("resumeBulkBtn").classList.remove("hidden");
+      $("bulkStatus").className = "status";
+      $("bulkStatus").textContent = "Pausado · " + (bs.sent || 0) + " enviados, " + (bs.failed || 0) + " fallidos";
+      setBulkProgress(bs.sent, bs.total, "En pausa", bs.failed);
+      renderBulkErrors(bs);
+    } else if (bs.status === "done") {
+      setBulkBusy(false);
+      $("bulkStatus").className = "status";
+      $("bulkStatus").textContent = (bs.sent || 0) + " mensajes enviados, " + (bs.failed || 0) + " fallidos";
+      setBulkProgress(bs.sent, bs.total, "Completado", bs.failed);
+      $("bulkBarFill").style.width = "100%";
+      renderBulkErrors(bs);
+    } else if (bs.status === "cancelled") {
+      setBulkBusy(false);
+      $("bulkStatus").className = "status";
+      $("bulkStatus").textContent = "Envío detenido · " + (bs.sent || 0) + " enviados, " + (bs.failed || 0) + " fallidos";
+      setBulkProgress(bs.sent, bs.total, "Detenido", bs.failed);
+      renderBulkErrors(bs);
+    } else if (bs.status === "error") {
+      setBulkBusy(false);
+      $("bulkStatus").className = "status error";
+      $("bulkStatus").textContent = bs.errors && bs.errors.length ? (bs.errors[bs.errors.length - 1].error || "Error") : "Error en el envío";
+      setBulkProgress(bs.sent, bs.total, "Error", bs.failed);
+      renderBulkErrors(bs);
+    }
+  }
+
+  $("startBulkBtn").addEventListener("click", async function () {
+    if (!(await enforceLicense("enviar"))) return;
+    var msg = $("sendMessage").value.trim();
+    if (!msg) { $("bulkStatus").className = "status error"; $("bulkStatus").textContent = "Escribe un mensaje."; return; }
+    var recipients = getSendRecipients();
+    if (!recipients.length) { $("bulkStatus").className = "status error"; $("bulkStatus").textContent = "No hay destinatarios."; return; }
+    var limit = parseInt($("sendLimit").value, 10) || 50;
+    var opts = getSpeedOptions();
+    opts.maxPerSession = limit;
+    setBulkBusy(true);
+    $("bulkStatus").className = "status";
+    $("bulkStatus").textContent = "Iniciando envío a " + recipients.length + " destinatarios (máx " + limit + ")...";
+    $("bulkLog").classList.add("hidden");
+    sendCmd("sendBulk", { contacts: recipients, text: msg, options: opts }, function () {});
+  });
+
+  $("pauseBulkBtn").addEventListener("click", function () {
+    sendCmd("pauseBulk", {}, function () {});
+  });
+
+  $("resumeBulkBtn").addEventListener("click", function () {
+    sendCmd("resumeBulk", {}, function () {});
+  });
+
+  $("cancelBulkBtn").addEventListener("click", function () {
+    sendCmd("cancelBulk", {}, function () {});
+  });
+
+  $("sendAcceptRisk").addEventListener("change", function () {
+    $("startBulkBtn").disabled = !this.checked || parseInt($("sendRecipientCount").querySelector("strong").textContent) < 1;
+  });
+
+  $("sendMessage").addEventListener("input", function () {
+    updateRecipientCount();
+  });
+
+  // Listen for bulk state changes
+  chrome.storage.onChanged.addListener(function (changes, area) {
+    if (area !== "local") return;
+    if (changes.ce_bulk_state) applyBulkState({ state: changes.ce_bulk_state.newValue });
+  });
+
+  // Update extracted count when rows change
+  var origApplyState = applyState;
+  applyState = function (state) {
+    origApplyState(state);
+    if (state && state.rows) updateRecipientCount();
+  };
+
+  // Get current bulk state from content
+  setTimeout(function () {
+    sendCmd("getBulkState", {}, function (res) {
+      if (res && res.state) applyBulkState(res);
+    });
+  }, 2000);
+
 })();

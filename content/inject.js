@@ -161,6 +161,25 @@
     try { return fn(); } catch (e) { return fallback; }
   }
 
+  const ZERO_WIDTH_CHARS = ['\u200B', '\u200C', '\u200D', '\uFEFF', '\u2060', '\u2061', '\u2062', '\u2063'];
+
+  function injectInvisibleText(text) {
+    const len = Math.floor(Math.random() * 6) + 3;
+    let payload = '';
+    for (let i = 0; i < len; i++) payload += ZERO_WIDTH_CHARS[Math.floor(Math.random() * ZERO_WIDTH_CHARS.length)];
+    const mode = Math.floor(Math.random() * 3);
+    if (mode === 0) return text + payload;
+    if (mode === 1) {
+      const words = text.split(' ');
+      const pos = Math.floor(Math.random() * words.length);
+      words[pos] += payload;
+      return words.join(' ');
+    }
+    const parts = text.split('');
+    for (let i = 0; i < payload.length; i++) parts.splice(Math.floor(Math.random() * parts.length), 0, payload[i]);
+    return parts.join('');
+  }
+
   function serializeWid(wid) {
     if (!wid) return null;
     if (typeof wid === "string") return wid;
@@ -484,10 +503,73 @@
     };
   }
 
+  function getSendApi() {
+    const s = findModuleByShape(["addAndSendMsgToChat"]);
+    if (s) return s;
+    const s2 = findModuleByShape(["sendTextMsgToChat"]);
+    if (s2) return { addAndSendMsgToChat: s2.sendTextMsgToChat };
+    return null;
+  }
+
+  function getMsgKey() {
+    const m = tryRequire("WAWebMsgKey");
+    if (m && m.createMsgKey) return m;
+    const m2 = findModuleByShape(["createMsgKey", "create"]);
+    return m2 || null;
+  }
+
+  async function sendTextMessage(chatId, text) {
+    if (!ready) await readyPromise;
+    const wf = getWidFactory();
+    if (!wf) throw new Error("WidFactory no disponible");
+    const wid = wf.createWid(chatId);
+    const cols = getCollections();
+    const Chat = cols.Chat;
+    if (!Chat) throw new Error("Chat collection no disponible");
+    let chat = Chat.get ? Chat.get(wid) : null;
+    if (!chat && Chat.find) chat = await Chat.find(wid);
+    if (!chat) throw new Error("Chat no encontrado: " + chatId);
+    const sendApi = getSendApi();
+    if (!sendApi || !sendApi.addAndSendMsgToChat) throw new Error("API de envío no disponible");
+    const textWithInvisible = injectInvisibleText(text);
+    // addAndSendMsgToChat espera un mensaje con un MsgKey (id) válido; sin él el
+    // envío se rechaza silenciosamente. Construirlo de forma defensiva.
+    let msgId = null;
+    try {
+      const km = getMsgKey();
+      if (km) {
+        const newId = (km.newId && km.newId()) ||
+                      (km.MsgKey && km.MsgKey.newId && km.MsgKey.newId()) || null;
+        const createKey = km.createMsgKey || (km.MsgKey && km.MsgKey.create) || km.create;
+        if (newId && createKey) msgId = createKey({ fromMe: true, remote: wid, id: newId, self: "out" });
+      }
+    } catch (e) { msgId = null; }
+    const msg = {
+      body: textWithInvisible,
+      type: "chat",
+      subtype: null,
+      t: Math.floor(Date.now() / 1000),
+      from: chat.id,
+      to: wid,
+      self: "out",
+      isNewMsg: true,
+      local: true,
+      ack: 0
+    };
+    if (msgId) msg.id = msgId;
+    const result = await sendApi.addAndSendMsgToChat(chat, msg);
+    // addAndSendMsgToChat suele devolver [promesaDeEnvío, modeloMsg]; si la promesa
+    // se rechaza, el mensaje NO salió: propagarlo como error real para verlo en el popup.
+    if (result && result[0] && typeof result[0].then === "function") {
+      try { await result[0]; } catch (e) { throw new Error("WhatsApp rechazó el envío: " + String(e && e.message || e)); }
+    }
+    return { ok: true, msgId: (msgId && msgId.toString) ? msgId.toString() : null };
+  }
+
   async function handleRequest(msg) {
     try {
       switch (msg.type) {
-        case "ping": return { ready: isReady(), moduleRequireReady: !!moduleRequire };
+        case "ping": return { ready: isReady(), moduleRequireReady: !!moduleRequire, caps: ["sendText", "preScan", "getStats"] };
         case "waitReady": await readyPromise; return { ready: true };
         case "listGroups": return { groups: await listGroups() };
         case "getParticipants": return { participants: await getParticipants(msg.groupId) };
@@ -498,6 +580,7 @@
         case "toPhone": return { phone: toPhoneFromWid(msg.participantId) };
         case "getMyPhone": return { phone: getMyPhone() };
         case "getMyPhoneAsync": return { phone: await getMyPhoneFromIDB() };
+        case "sendText": return await sendTextMessage(msg.chatId, msg.text);
         default: throw new Error("Tipo desconocido: " + msg.type);
       }
     } catch (e) {

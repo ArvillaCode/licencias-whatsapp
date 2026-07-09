@@ -9,7 +9,7 @@
   <header>
     <h1>Contact Extract</h1>
     <button id="reconnectBtn" class="reconnect-btn" title="Reconectar con WhatsApp Web">↻</button>
-    <p class="subtitle">Extrae contactos de un grupo de WhatsApp Web</p>
+    <p class="subtitle">Extrae contactos y envía mensajes</p>
   </header>
 
   <section id="licenseGate" class="license-gate hidden">
@@ -30,6 +30,15 @@
   </section>
 
   <div id="mainApp" class="hidden">
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs">
+    <button class="tab active" data-page="extract">📋 Extraer</button>
+    <button class="tab" data-page="send">📨 Enviar</button>
+  </nav>
+
+  <!-- ── EXTRACT PAGE ── -->
+  <div id="page-extract" class="page active">
 
   <div id="warning" class="warning">
     Extraer contactos puede violar los Términos de WhatsApp y causar el baneo de tu cuenta. Úsalo con moderación.
@@ -106,7 +115,93 @@
     </div>
   </section>
 
-  </div>
+  </div><!-- /page-extract -->
+
+  <!-- ── SEND PAGE ── -->
+  <div id="page-send" class="page">
+
+    <div class="send-section">
+      <label>Mensaje:</label>
+      <textarea id="sendMessage" rows="4" placeholder="Escribe tu mensaje aquí...&#10;&#10;{name} = Nombre del contacto&#10;{phone} = Teléfono"></textarea>
+    </div>
+
+    <div class="send-section">
+      <label>Destinatarios:</label>
+      <div class="send-options">
+        <label class="radio-row">
+          <input type="radio" name="sendOrigin" value="extracted" checked />
+          <span>Contactos extraídos <span id="sendExtractedCount">(0)</span></span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="sendOrigin" value="import" />
+          <span>Importar lista</span>
+        </label>
+      </div>
+      <div id="sendImportArea" class="hidden">
+        <textarea id="sendImportList" rows="4" placeholder="Pega un teléfono por línea:&#10;573218101385&#10;573001234567"></textarea>
+        <p class="hint">O <a href="#" id="sendFileLink">importar archivo .csv o .txt</a></p>
+        <input type="file" id="sendFileInput" accept=".csv,.txt" class="hidden" />
+        <div id="sendImportPreview" class="import-preview hidden"></div>
+      </div>
+      <p class="hint" id="sendRecipientCount">Total: <strong>0</strong> destinatarios</p>
+    </div>
+
+    <div class="send-section">
+      <label>Velocidad de envío:</label>
+      <div class="speed-selector">
+        <label class="radio-row">
+          <input type="radio" name="speed" value="slow" checked />
+          <span>🟢 Lenta — máxima seguridad</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="speed" value="medium" />
+          <span>🟡 Media — equilibrio</span>
+        </label>
+        <label class="radio-row">
+          <input type="radio" name="speed" value="fast" />
+          <span>🔴 Rápida — mínimo riesgo (no recomendado)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="send-section">
+      <label>Límite: <input type="number" id="sendLimit" value="50" min="10" max="200" style="width:70px" /> mensajes por sesión</label>
+    </div>
+
+    <div class="send-section">
+      <label class="check">
+        <input type="checkbox" id="sendAcceptRisk" />
+        <span>Entiendo que Meta puede bloquear mi cuenta por uso inadecuado. Esta herramienta tiene métodos anti-spam pero no elimina el riesgo. Soy responsable del uso que le doy.</span>
+      </label>
+    </div>
+
+    <section class="row">
+      <button id="startBulkBtn" class="btn primary" disabled>🚀 Iniciar Envío</button>
+    </section>
+
+    <section id="bulkControls" class="controls hidden">
+      <button id="pauseBulkBtn" class="btn">⏸ Pausar</button>
+      <button id="resumeBulkBtn" class="btn hidden">▶ Reanudar</button>
+      <button id="cancelBulkBtn" class="btn danger">✕ Detener</button>
+    </section>
+
+    <div id="bulkProgress" class="progress hidden">
+      <div class="bar"><div id="bulkBarFill" class="bar-fill"></div></div>
+      <div id="bulkProgressText" class="progress-text">0 / 0</div>
+    </div>
+
+    <div id="bulkStats" class="stats hidden">
+      <div class="stat"><span class="stat-num" id="bulkSent">0</span><span class="stat-lbl">Enviados</span></div>
+      <div class="stat"><span class="stat-num" id="bulkFailed">0</span><span class="stat-lbl">Fallidos</span></div>
+      <div class="stat"><span class="stat-num" id="bulkRemaining">0</span><span class="stat-lbl">Restantes</span></div>
+    </div>
+
+    <div id="bulkStatus" class="status"></div>
+    <div id="bulkLog" class="log-area hidden"></div>
+
+  </div><!-- /page-send -->
+
+  </div><!-- /mainApp -->
 
   <script src="config.js"></script>
   <script src="public-key.js"></script>

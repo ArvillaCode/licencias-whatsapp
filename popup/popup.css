@@ -196,3 +196,63 @@ th, td {
 th { background: #080C14; color: #94A3B8; position: sticky; top: 0; z-index: 1; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
 td.lid { color: #94A3B8; font-size: 11px; }
 td.role-admin { color: #00E5FF; font-weight: 600; }
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  background: #111b21;
+  border-bottom: 1px solid rgba(148,163,184,0.2);
+}
+.tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: #94A3B8;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tab:hover { color: #FFFFFF; background: rgba(0,229,255,0.05); }
+.tab.active { color: #00E5FF; background: rgba(0,229,255,0.1); border-bottom: 2px solid #00E5FF; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Send Page ── */
+.send-section { padding: 8px 12px; }
+.send-section label { display: block; font-weight: 500; color: #94A3B8; margin-bottom: 4px; }
+.send-section textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid rgba(148,163,184,0.25);
+  border-radius: 6px;
+  background: #111b21;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+}
+.send-section textarea:focus { outline: none; border-color: #00E5FF; }
+.send-options { display: flex; flex-direction: column; gap: 4px; }
+.radio-row { display: flex; align-items: center; gap: 6px; cursor: pointer; color: #94A3B8; font-size: 12px; }
+.radio-row input { accent-color: #00E5FF; margin: 0; }
+.radio-row span { color: #94A3B8; }
+.speed-selector { display: flex; flex-direction: column; gap: 4px; }
+.import-preview { margin-top: 4px; font-size: 11px; color: #00E5FF; }
+.log-area {
+  margin: 8px 12px;
+  padding: 8px;
+  background: #111b21;
+  border: 1px solid rgba(239,154,154,0.3);
+  border-radius: 6px;
+  font-size: 11px;
+  color: #ef9a9a;
+  max-height: 120px;
+  overflow: auto;
+}
+#sendLimit { background: #111b21; color: #FFFFFF; border: 1px solid rgba(148,163,184,0.25); border-radius: 4px; padding: 4px 6px; font-size: 13px; font-family: 'Inter', sans-serif; }
+#sendLimit:focus { outline: none; border-color: #00E5FF; }
