@@ -139,14 +139,20 @@ app.post("/api/license/activate", async function (req, res) {
   try {
     const licenseKey = (req.body && req.body.license) || "";
     const verifyRes = await verifyLicenseRaw(licenseKey);
-    if (!verifyRes.ok) return res.status(400).json({ ok: false, error: verifyRes.error, expired: !!verifyRes.expired });
+    if (!verifyRes.ok && !verifyRes.expired) return res.status(400).json({ ok: false, error: verifyRes.error, expired: !!verifyRes.expired });
     const payload = verifyRes.payload;
     let license = await db.findLicenseByPayload(payload.email, payload.whatsapp, payload.startDate, payload.endDate);
     if (!license) license = await db.findRevokedByEmail(payload.email);
     if (!license) return res.status(404).json({ ok: false, error: "Esta clave no fue emitida por el administrador" });
     if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador", revoked: true });
+    const effectiveEndDate = license.end_date || payload.endDate;
+    const now = new Date();
+    const end = new Date(effectiveEndDate);
+    if (now > end) return res.status(403).json({ ok: false, error: "Licencia expirada", expired: true });
+    const daysLeft = Math.ceil((end - now) / 86400000);
+    const responsePayload = { email: payload.email, whatsapp: payload.whatsapp, startDate: payload.startDate, endDate: effectiveEndDate, issued: payload.issued };
     await db.updateLicenseActivation(license.id, req.headers["x-forwarded-for"] || req.socket.remoteAddress || null);
-    res.json({ ok: true, payload, daysLeft: verifyRes.daysLeft, licenseId: license.id, revoked: false });
+    res.json({ ok: true, payload: responsePayload, daysLeft: daysLeft, licenseId: license.id, revoked: false });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
 
@@ -297,13 +303,9 @@ app.post("/admin/license/:id/renew", adminAuth, async function (req, res) {
     const { endDate } = req.body || {};
     if (!endDate) return res.status(400).json({ ok: false, error: "Falta endDate" });
     const endDateIso = new Date(endDate + "T23:59:59.999Z").toISOString();
-    const startDateIso = lic.start_date;
-    if (new Date(endDateIso) < new Date(startDateIso)) return res.status(400).json({ ok: false, error: "endDate debe ser posterior a startDate" });
+    if (new Date(endDateIso) < new Date(lic.start_date)) return res.status(400).json({ ok: false, error: "endDate debe ser posterior a startDate" });
     await db.renewLicense(req.params.id, endDateIso);
-    await loadKeyPair();
-    const licenseKey = await buildSignedLicense(lic.email, lic.whatsapp, startDateIso, endDateIso);
-    await db.reissueLicense(req.params.id, startDateIso, endDateIso, licenseKey);
-    res.json({ ok: true, license: licenseKey, licenseId: req.params.id, payload: { email: lic.email, whatsapp: lic.whatsapp, startDate: startDateIso, endDate: endDateIso } });
+    res.json({ ok: true, licenseId: req.params.id, payload: { email: lic.email, whatsapp: lic.whatsapp, startDate: lic.start_date, endDate: endDateIso } });
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
 

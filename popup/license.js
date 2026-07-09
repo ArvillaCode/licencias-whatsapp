@@ -151,18 +151,19 @@
   async function activateLicense(licenseKey) {
     const key = licenseKey.trim();
     const localRes = await verifyLicenseRaw(key);
-    if (!localRes.ok) return { ok: false, error: localRes.error, expired: localRes.expired };
+    if (!localRes.ok && !localRes.expired) return { ok: false, error: localRes.error, expired: localRes.expired };
     let licenseId = null, daysLeft = localRes.daysLeft;
+    let payload = localRes.payload;
     if (backendEnabled()) {
       const backendRes = await activateLicenseBackend(key);
-      if (backendRes && backendRes.ok) { licenseId = backendRes.licenseId; daysLeft = backendRes.daysLeft; }
+      if (backendRes && backendRes.ok) { licenseId = backendRes.licenseId; daysLeft = backendRes.daysLeft; payload = backendRes.payload || payload; }
       else if (backendRes) {
         return { ok: false, error: backendRes.error || "Licencia rechazada por el servidor", revoked: backendRes.revoked, expired: backendRes.expired };
       }
     }
-    await setStoredLicense({ license: key, payload: localRes.payload, daysLeft: daysLeft, licenseId: licenseId, checkedAt: Date.now() });
+    await setStoredLicense({ license: key, payload: payload, daysLeft: daysLeft, licenseId: licenseId, checkedAt: Date.now() });
     if (backendEnabled()) await fetchAndCachePubKey();
-    return { ok: true, payload: localRes.payload, daysLeft: daysLeft, licenseId: licenseId };
+    return { ok: true, payload: payload, daysLeft: daysLeft, licenseId: licenseId };
   }
 
   window.__CELicense = {

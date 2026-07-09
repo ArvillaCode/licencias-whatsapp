@@ -41,8 +41,8 @@ async function findRevokedByEmail(email) {
 
 async function findLicenseByPayload(email, whatsapp, startDate, endDate) {
   const res = await query(
-    "SELECT * FROM licenses WHERE email = $1 AND whatsapp = $2 AND start_date = $3 AND end_date = $4 LIMIT 1",
-    [email, whatsapp, startDate, endDate]
+    "SELECT * FROM licenses WHERE email = $1 AND whatsapp = $2 LIMIT 1",
+    [email, whatsapp]
   );
   return res.rows[0] || null;
 }

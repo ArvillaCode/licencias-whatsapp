@@ -245,14 +245,13 @@
     if (!endStr) { setStatus($("renewStatus"), "Selecciona una fecha de fin.", "err"); return; }
     setStatus($("renewStatus"), "Renovando...", "info");
     try {
-      const data = await __CEAuth.fetch("/admin/license/" + editLicId + "/renew", {
+      await __CEAuth.fetch("/admin/license/" + editLicId + "/renew", {
         method: "POST",
         body: JSON.stringify({ endDate: endStr })
       });
-      $("licenseOut").value = data.license || "";
       $("renewModal").style.display = "none";
       refreshLog();
-      setStatus($("issueStatus"), "Licencia renovada. La clave anterior dejará de funcionar. Copia y envía la nueva al cliente.", "ok");
+      setStatus($("issueStatus"), "Licencia renovada hasta " + endStr + ". El cliente no necesita cambiar su clave.", "ok");
     } catch (e) { setStatus($("renewStatus"), "Error: " + e.message, "err"); }
   });
 
