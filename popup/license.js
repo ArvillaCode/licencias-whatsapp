@@ -71,10 +71,9 @@
       const now = new Date();
       const start = new Date(json.p.startDate);
       const end = new Date(json.p.endDate);
-      if (now < start) return { ok: false, error: "Aún no vigente (inicio " + start.toISOString().slice(0, 10) + ")", payload: json.p };
       if (now > end) return { ok: false, error: "Expirada el " + end.toISOString().slice(0, 10), payload: json.p, expired: true };
       const daysLeft = Math.ceil((end - now) / 86400000);
-      return { ok: true, payload: json.p, daysLeft: daysLeft };
+      return { ok: true, payload: json.p, daysLeft: daysLeft, notYetValid: now < start };
     } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
   }
 
@@ -162,7 +161,7 @@
   async function activateLicense(licenseKey) {
     const key = licenseKey.trim();
     const localRes = await verifyLicenseRaw(key);
-    if (!localRes.ok && !localRes.expired) return { ok: false, error: localRes.error, expired: localRes.expired };
+    if (!localRes.ok && !localRes.expired && !localRes.payload) return { ok: false, error: localRes.error, expired: localRes.expired };
     let licenseId = null, daysLeft = localRes.daysLeft;
     let payload = localRes.payload;
     if (backendEnabled()) {

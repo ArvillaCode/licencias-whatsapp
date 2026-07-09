@@ -98,9 +98,9 @@ async function verifyLicenseRaw(licenseKey) {
     const valid = await crypto.webcrypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, keyPair.publicKey, sig, new TextEncoder().encode(JSON.stringify(json.p)));
     if (!valid) return { ok: false, error: "Firma inválida" };
     const now = new Date(), start = new Date(json.p.startDate), end = new Date(json.p.endDate);
-    if (now < start) return { ok: false, error: "Aún no vigente (inicio " + start.toISOString().slice(0, 10) + ")", payload: json.p };
     if (now > end) return { ok: false, error: "Expirada el " + end.toISOString().slice(0, 10), payload: json.p, expired: true };
-    return { ok: true, payload: json.p, daysLeft: Math.ceil((end - now) / 86400000) };
+    const daysLeft = Math.ceil((end - now) / 86400000);
+    return { ok: true, payload: json.p, daysLeft: daysLeft, notYetValid: now < start };
   } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
 }
 
@@ -124,7 +124,12 @@ app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",").map(s
 
 // Serve admin static files
 const adminDir = path.join(__dirname, "..", "public", "admin");
-app.use("/admin", express.static(adminDir));
+app.use("/admin", function (req, res, next) {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+}, express.static(adminDir));
 app.get("/admin", function (req, res) { res.redirect("/admin/admin.html"); });
 app.get("/", function (req, res) { res.redirect("/admin/login.html"); });
 

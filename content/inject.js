@@ -198,6 +198,7 @@
   }
 
   async function listGroups() {
+    if (!ready) await readyPromise;
     const cols = getCollections();
     const Chat = cols.Chat;
     if (!Chat) throw new Error("No se pudo acceder a la lista de chats (WAWebCollections.Chat).");
@@ -219,6 +220,7 @@
   }
 
   async function getParticipants(groupId) {
+    if (!ready) await readyPromise;
     const wf = getWidFactory();
     if (!wf) throw new Error("No se pudo crear el Wid (WAWebWidFactory).");
     const wid = wf.createWid(groupId);
@@ -433,23 +435,52 @@
     } catch (e) { LOG("getMyPhoneFromIDB error:", e.message); return null; }
   }
 
+  async function preScanPhones(groupId) {
+    const participants = await getParticipants(groupId);
+    const total = participants.length;
+    let withPhone = 0;
+    let withoutPhone = 0;
+    const phoneParticipants = [];
+    const noPhoneIds = [];
+    for (let i = 0; i < total; i++) {
+      const p = participants[i];
+      const phone = toPhoneFromWid(p.id);
+      if (phone) {
+        withPhone++;
+        phoneParticipants.push({ id: p.id, isAdmin: p.isAdmin, isSuperAdmin: p.isSuperAdmin });
+      } else {
+        withoutPhone++;
+        noPhoneIds.push(p.id);
+      }
+    }
+    return {
+      total: total,
+      withPhone: withPhone,
+      withoutPhone: withoutPhone,
+      phoneParticipants: phoneParticipants,
+      noPhoneIds: noPhoneIds
+    };
+  }
+
   async function getStats(groupId) {
+    if (!ready) await readyPromise;
     const partsRes = { participants: await getParticipants(groupId) };
     const participants = (partsRes && partsRes.participants) || [];
     const total = participants.length;
-    let admins = 0, superAdmins = 0, lidCount = 0;
+    let admins = 0, superAdmins = 0, phoneCount = 0;
     for (const p of participants) {
       if (p.isSuperAdmin) superAdmins++;
       else if (p.isAdmin) admins++;
-      if (p.id && p.id.indexOf("@lid") !== -1) lidCount++;
+      const phone = toPhoneFromWid(p.id);
+      if (phone) phoneCount++;
     }
     return {
       total: total,
       admins: admins,
       superAdmins: superAdmins,
       members: total - admins - superAdmins,
-      lidCount: lidCount,
-      phoneCount: total - lidCount
+      lidCount: total - phoneCount,
+      phoneCount: phoneCount
     };
   }
 
@@ -460,6 +491,7 @@
         case "waitReady": await readyPromise; return { ready: true };
         case "listGroups": return { groups: await listGroups() };
         case "getParticipants": return { participants: await getParticipants(msg.groupId) };
+        case "preScan": return { scan: await preScanPhones(msg.groupId) };
         case "getStats": return { stats: await getStats(msg.groupId) };
         case "resolveContact": return await resolveContact(msg.participantId);
         case "getAbout": return { about: await getAbout(msg.participantId) };

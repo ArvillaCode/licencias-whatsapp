@@ -69,20 +69,6 @@
       });
       const data = await res.json();
       if (res.ok && data && data.ok) {
-        const tab = await getWaTab();
-        if (tab) {
-          const phoneRes = await new Promise(function (r) {
-            chrome.tabs.sendMessage(tab.id, { cmd: "getMyPhone" }, function (resp) { r(resp || {}); });
-          });
-          if (phoneRes && phoneRes.phone) {
-            const licPhone = (data.payload && data.payload.whatsapp || stored.payload.whatsapp || "").replace(/[^0-9]/g, "");
-            const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
-            if (licPhone !== waPhone) {
-              showLicenseGate("Esta licencia es para otro número de WhatsApp. <a href='https://wa.me/573218101385' target='_blank'>Solicita una licencia para tu número aquí</a>.");
-              return;
-            }
-          }
-        }
         await new Promise(function (r) { chrome.storage.local.set({ ce_active_license: { license: stored.license, payload: data.payload || stored.payload, daysLeft: data.daysLeft, licenseId: data.licenseId, checkedAt: Date.now() } }, r); });
         showMainApp();
         return;
@@ -142,28 +128,12 @@
     el.className = "status"; el.textContent = "Verificando...";
     const res = await window.__CELicense.activate(key);
     if (res.ok && res.payload) {
-      const tab = await getWaTab();
-      if (tab) {
-        const phoneRes = await new Promise(function (r) {
-          chrome.tabs.sendMessage(tab.id, { cmd: "getMyPhone" }, function (resp) { r(resp || {}); });
-        });
-        if (phoneRes && phoneRes.phone) {
-          const licPhone = (res.payload.whatsapp || "").replace(/[^0-9]/g, "");
-          const waPhone = (phoneRes.phone || "").replace(/[^0-9]/g, "");
-          if (licPhone !== waPhone) {
-            el.className = "status error";
-            el.innerHTML = "Esta licencia es para otro número. <a href='https://wa.me/573218101385' target='_blank'>Solicita una para tu número</a>.";
-            await window.__CELicense.clear();
-            return;
-          }
-        }
-      }
       el.className = "status"; el.textContent = "";
       showMainApp();
       init();
     } else {
       el.className = "status error";
-      el.innerHTML = "¿No tienes licencia? <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Actívala aquí</a>";
+      el.innerHTML = res.error || "No se pudo activar la licencia. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Actívala aquí</a>";
     }
   });
 
@@ -204,8 +174,16 @@
     if (!state) return;
     rows = state.rows || [];
     if (state.groupName) lastGroupName = state.groupName;
-    if (state.status === "extracting") {
+    if (state.status === "prescanning") {
       setBusy(true);
+      $("progress").classList.remove("hidden");
+      $("barFill").style.width = "100%";
+      $("barFill").style.opacity = "0.5";
+      $("progressText").textContent = "Pre-escaneando contactos con teléfono...";
+      setStatus("Identificando contactos con número de teléfono...");
+    } else if (state.status === "extracting") {
+      setBusy(true);
+      $("barFill").style.opacity = "1";
       setProgress(state.done || 0, state.total || 0, state.current || "");
     } else if (state.status === "paused") {
       setBusy(true);
@@ -213,6 +191,8 @@
       setProgress(state.done || 0, state.total || 0, state.current || "");
       setStatus("Pausado en " + (state.done || 0) + " de " + (state.total || 0));
     } else if (state.status === "done") {
+      setBusy(false);
+      $("barFill").style.opacity = "1";
       renderResults(state.rows || []);
       setStatus((state.rows || []).length + " contactos extraídos.");
     } else if (state.status === "error") {
@@ -220,6 +200,7 @@
       setBusy(false);
     } else if (state.status === "idle") {
       rows = [];
+      $("barFill").style.opacity = "1";
       const tbody = $("tbody");
       if (tbody) tbody.innerHTML = "";
       $("results").classList.add("hidden");
@@ -316,7 +297,6 @@
         $("statTotal").textContent = "—";
         $("statAdmins").textContent = "—";
         $("statMembers").textContent = "—";
-        $("statPhone").textContent = "—";
         $("statLid").textContent = "—";
         $("statsPanel").classList.remove("hidden");
         return;
@@ -325,7 +305,6 @@
       $("statTotal").textContent = s.total;
       $("statAdmins").textContent = s.admins + (s.superAdmins ? "+" + s.superAdmins : "");
       $("statMembers").textContent = s.members;
-      $("statPhone").textContent = s.phoneCount;
       $("statLid").textContent = s.lidCount;
       $("statsPanel").classList.remove("hidden");
     });
@@ -380,6 +359,7 @@
     $("progress").classList.remove("hidden");
     const pct = total ? Math.round((done / total) * 100) : 0;
     $("barFill").style.width = pct + "%";
+    $("barFill").style.opacity = "1";
     $("progressText").textContent = done + " / " + total + (current ? " — " + current : "");
     setStatus("Extrayendo " + done + " de " + total + "...");
   }

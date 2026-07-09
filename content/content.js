@@ -18,7 +18,7 @@
     LOG("Inyectando inject.js en MAIN world...");
     try {
       const s = document.createElement("script");
-      s.src = chrome.runtime.getURL("content/inject.js");
+      s.src = chrome.runtime.getURL("content/inject.js") + "?v=" + Date.now();
       s.onload = function () { LOG("inject.js cargado OK"); s.remove(); };
       s.onerror = function () { LOG("ERROR: inject.js no cargó"); s.remove(); injected = false; };
       (document.head || document.documentElement).appendChild(s);
@@ -38,7 +38,10 @@
     groupId: "",
     includeAbout: true,
     startedAt: 0,
-    finishedAt: 0
+    finishedAt: 0,
+    preScanTotal: 0,
+    preScanDone: 0,
+    phoneCount: 0
   };
 
   function loadState(cb) {
@@ -119,7 +122,7 @@
   async function runExtract(groupId, groupName, includeAbout) {
     if (extracting) return;
     extracting = true;
-    state.status = "extracting";
+    state.status = "prescanning";
     state.groupId = groupId;
     state.groupName = groupName;
     state.includeAbout = includeAbout;
@@ -130,13 +133,27 @@
     state.error = "";
     state.startedAt = Date.now();
     state.finishedAt = 0;
+    state.preScanTotal = 0;
+    state.preScanDone = 0;
+    state.phoneCount = 0;
     saveState();
     try {
       if (!readyState) await waitForReady();
-      const partsRes = await sendToInject("getParticipants", { groupId: groupId }, 60000);
-      const participants = (partsRes && partsRes.participants) || [];
-      const total = participants.length;
+      // ── Pre-scan: identify contacts with phones ──
+      state.current = "Pre-escaneando contactos...";
+      saveState();
+      const scanRes = await sendToInject("preScan", { groupId: groupId }, 120000);
+      const scan = scanRes && scanRes.scan ? scanRes.scan : null;
+      if (!scan) throw new Error("No se pudo pre-escanear el grupo.");
+      const phoneParticipants = scan.phoneParticipants || [];
+      state.preScanTotal = scan.total;
+      state.preScanDone = scan.total;
+      state.phoneCount = phoneParticipants.length;
+      saveState();
+      // ── Extract only contacts with phones ──
+      const total = phoneParticipants.length;
       state.total = total;
+      state.status = "extracting";
       saveState();
       if (total === 0) {
         state.status = "done";
@@ -150,7 +167,7 @@
         if (!extracting) return;
         await waitWhilePaused();
         if (!extracting) return;
-        const p = participants[i];
+        const p = phoneParticipants[i];
         const idStr = p.id;
         let phone = null, name = "", pushname = "", about = null;
         try {
@@ -315,7 +332,10 @@
         groupId: "",
         includeAbout: true,
         startedAt: 0,
-        finishedAt: 0
+        finishedAt: 0,
+        preScanTotal: 0,
+        preScanDone: 0,
+        phoneCount: 0
       };
       saveState();
       reply(sendResponse, { ok: true });
