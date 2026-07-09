@@ -104,6 +104,14 @@ async function renewLicense(id, endDate) {
   await query("UPDATE licenses SET end_date = $2 WHERE id = $1", [id, endDate]);
 }
 
+async function setDeviceBinding(id, deviceId) {
+  await query("UPDATE licenses SET device_id = $2 WHERE id = $1", [id, deviceId]);
+}
+
+async function resetDeviceBinding(id) {
+  await query("UPDATE licenses SET device_id = NULL WHERE id = $1", [id]);
+}
+
 module.exports = {
   query,
   findUserByUsername,
@@ -118,6 +126,8 @@ module.exports = {
   setLicenseRevoked,
   reissueLicense,
   renewLicense,
+  setDeviceBinding,
+  resetDeviceBinding,
   deleteLicense,
   getConfig,
   setConfig,

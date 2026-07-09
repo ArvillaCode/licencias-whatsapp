@@ -98,12 +98,23 @@
     return new Promise(function (r) { chrome.storage.local.set({ [LAST_CHECK_KEY]: ts }, r); });
   }
 
+  function getDeviceId() {
+    const raw = chrome.runtime.id + "|" + navigator.userAgent + "|" + screen.width + "x" + screen.height;
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++) {
+      const chr = raw.charCodeAt(i);
+      hash = ((hash << 5) - hash) + chr;
+      hash |= 0;
+    }
+    return "dev_" + Math.abs(hash).toString(36);
+  }
+
   async function activateLicenseBackend(licenseKey) {
     if (!backendEnabled()) return null;
     try {
       const res = await fetch(backendUrl() + "/api/license/activate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ license: licenseKey })
+        body: JSON.stringify({ license: licenseKey, deviceId: getDeviceId() })
       });
       const data = await res.json();
       if (!res.ok) return { ok: false, error: data.error || ("HTTP " + res.status), revoked: !!data.revoked, expired: !!data.expired };
@@ -173,6 +184,7 @@
     clear: clearStoredLicense,
     fetchPubKey: fetchAndCachePubKey,
     isBackendEnabled: backendEnabled,
+    getDeviceId: getDeviceId,
     hasPubKey: async function () {
       const jwk = await getPubKeyJwk();
       return !!(jwk && jwk.n);

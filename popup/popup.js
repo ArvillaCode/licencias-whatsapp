@@ -62,9 +62,10 @@
     const el = $("licenseStatus");
     el.className = "status"; el.innerHTML = "Verificando con el servidor...";
     try {
+      const deviceId = window.__CELicense.getDeviceId ? window.__CELicense.getDeviceId() : null;
       const res = await fetch("https://dashboard-licence.upfunnel.click/api/license/activate", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ license: stored.license })
+        body: JSON.stringify({ license: stored.license, deviceId: deviceId })
       });
       const data = await res.json();
       if (res.ok && data && data.ok) {

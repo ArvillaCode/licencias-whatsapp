@@ -50,6 +50,7 @@
         actions += '<button class="renewBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '" data-wa="' + esc(e.whatsapp) + '" data-start="' + (e.startDate || "").slice(0, 10) + '" data-end="' + (e.endDate || "").slice(0, 10) + '">Renovar</button> ';
         if (e.revoked) actions += '<button class="restoreBtn copy-btn" data-id="' + e.id + '">Restaurar</button>';
         else actions += '<button class="revokeBtn copy-btn danger" data-id="' + e.id + '">Revocar</button>';
+        actions += '<button class="resetDeviceBtn copy-btn" data-id="' + e.id + '" data-email="' + esc(e.email) + '">Resetear Dispositivo</button>';
         actions += '<button class="deleteBtn copy-btn danger" data-id="' + e.id + '" data-email="' + esc(e.email) + '">Eliminar</button>';
       }
       const tr = document.createElement("tr");
@@ -61,7 +62,7 @@
         "<td>" + (e.endDate || "").slice(0, 10) + "</td>" +
         "<td>" + days + "</td>" +
         "<td>" + statusHtml + "</td>" +
-        "<td>" + (e.activations != null ? e.activations : "—") + "</td>" +
+        "<td>" + (e.activations != null ? e.activations : "—") + (e.deviceId ? " <span title='Vinculado: " + esc(e.deviceId) + "'>🔒</span>" : "") + "</td>" +
         "<td>" + actions + "</td>";
       tb.appendChild(tr);
     });
@@ -81,6 +82,12 @@
       b.addEventListener("click", function () {
         if (!confirm("¿Eliminar permanentemente la licencia de " + b.dataset.email + "?")) return;
         __CEAuth.fetch("/admin/license/" + b.dataset.id, { method: "DELETE" }).then(function () { refreshLog(); setStatus($("logStatus"), "Licencia eliminada.", "ok"); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
+      });
+    });
+    document.querySelectorAll(".resetDeviceBtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!confirm("¿Resetear el dispositivo vinculado de " + b.dataset.email + "? El cliente podrá activar desde otro navegador.")) return;
+        __CEAuth.fetch("/admin/license/" + b.dataset.id + "/reset-device", { method: "POST" }).then(function () { refreshLog(); setStatus($("logStatus"), "Dispositivo reseteado. El cliente puede activar desde cualquier navegador.", "ok"); }).catch(function (e) { setStatus($("logStatus"), "Error: " + e.message, "err"); });
       });
     });
     document.querySelectorAll(".editBtn").forEach(function (b) {

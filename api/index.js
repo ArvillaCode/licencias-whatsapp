@@ -138,6 +138,7 @@ app.get("/api/pubkey", async function (req, res) {
 app.post("/api/license/activate", async function (req, res) {
   try {
     const licenseKey = (req.body && req.body.license) || "";
+    const deviceId = (req.body && req.body.deviceId) || null;
     const verifyRes = await verifyLicenseRaw(licenseKey);
     if (!verifyRes.ok && !verifyRes.expired) return res.status(400).json({ ok: false, error: verifyRes.error, expired: !!verifyRes.expired });
     const payload = verifyRes.payload;
@@ -145,6 +146,12 @@ app.post("/api/license/activate", async function (req, res) {
     if (!license) license = await db.findRevokedByEmail(payload.email);
     if (!license) return res.status(404).json({ ok: false, error: "Esta clave no fue emitida por el administrador" });
     if (license.revoked) return res.status(403).json({ ok: false, error: "Licencia revocada por el administrador", revoked: true });
+    if (license.device_id && deviceId && license.device_id !== deviceId) {
+      return res.status(403).json({ ok: false, error: "Esta licencia está vinculada a otro dispositivo. Contacta al administrador." });
+    }
+    if (deviceId && !license.device_id) {
+      await db.setDeviceBinding(license.id, deviceId);
+    }
     const effectiveEndDate = license.end_date || payload.endDate;
     const now = new Date();
     const end = new Date(effectiveEndDate);
@@ -249,6 +256,7 @@ app.get("/admin/licenses", adminAuth, async function (req, res) {
         activations: l.activations, lastActivatedAt: l.last_activated_at,
         lastIp: l.last_ip, licenseKey: l.license_key || l.license_prefix,
         expired: new Date() > end, daysLeft: Math.ceil((end - new Date()) / 86400000),
+        deviceId: l.device_id || null,
       };
     });
     res.json({ ok: true, licenses: mapped });
@@ -296,6 +304,15 @@ app.delete("/admin/license/:id", adminAuth, async function (req, res) {
   } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
 });
 
+app.post("/admin/license/:id/reset-device", adminAuth, async function (req, res) {
+  try {
+    const lic = await db.findLicenseById(req.params.id);
+    if (!lic) return res.status(404).json({ ok: false, error: "Licencia no encontrada" });
+    await db.resetDeviceBinding(req.params.id);
+    res.json({ ok: true, licenseId: req.params.id, deviceReset: true });
+  } catch (e) { res.status(500).json({ ok: false, error: String(e && e.message || e) }); }
+});
+
 app.post("/admin/license/:id/renew", adminAuth, async function (req, res) {
   try {
     const lic = await db.findLicenseById(req.params.id);
@@ -312,6 +329,7 @@ app.post("/admin/license/:id/renew", adminAuth, async function (req, res) {
 // ── Startup migration ────────────────────────────────────────────────
 (async function () {
   try { await db.query("ALTER TABLE licenses ADD COLUMN IF NOT EXISTS license_key TEXT"); } catch (e) { /* table may not exist yet */ }
+  try { await db.query("ALTER TABLE licenses ADD COLUMN IF NOT EXISTS device_id TEXT"); } catch (e) { /* table may not exist yet */ }
 })();
 
 // ── 404 handler ──────────────────────────────────────────────────────
