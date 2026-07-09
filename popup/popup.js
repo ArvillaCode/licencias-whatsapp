@@ -95,7 +95,7 @@
         return;
       }
       chrome.storage.local.remove("ce_active_license", function () {});
-      showLicenseGate((data && data.error) || "Licencia inválida. <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20activar%20mi%20licencia' target='_blank'>Solicita una nueva aquí</a>.");
+      showLicenseGate("Licencia rechazada (" + res.status + "): " + (data && data.error || "desconocido") + ". <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20mi%20licencia%20no%20funciona' target='_blank'>Contacta al administrador</a>.");
     } catch (e) {
       showLicenseGate("Error de conexión con el servidor. <a href='https://wa.me/573218101385' target='_blank'>Contacta al administrador</a>.");
     }
