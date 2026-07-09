@@ -25,49 +25,7 @@
   function setStatus(el, msg, kind) { if (!el) return; el.className = "status " + (kind || "info"); el.textContent = msg; }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-  function b64urlToB64(s) { return s.replace(/-/g, "+").replace(/_/g, "/"); }
-  function bytesToB64url(arr) {
-    let bin = "";
-    const bytes = new Uint8Array(arr);
-    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  }
-  function b64urlToBytes(s) {
-    s = b64urlToB64(s);
-    while (s.length % 4) s += "=";
-    const bin = atob(s);
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  }
 
-  var cachedPubJwk = null;
-  async function getPubJwk() {
-    if (cachedPubJwk) return cachedPubJwk;
-    const res = await fetch("/api/pubkey", { method: "GET", headers: { "Content-Type": "application/json" } });
-    const data = await res.json().catch(function () { return {}; });
-    if (data && data.jwk && data.jwk.n) { cachedPubJwk = data.jwk; return data.jwk; }
-    throw new Error("No se pudo obtener la clave pública del servidor");
-  }
-
-  async function verifyLicenseLocally(licenseKey) {
-    try {
-      const jwk = await getPubJwk();
-      let b64 = licenseKey.trim().replace(/\s+/g, "");
-      b64 = b64urlToB64(b64);
-      while (b64.length % 4) b64 += "=";
-      const bin = atob(b64);
-      const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, function (c) { return c.charCodeAt(0); })));
-      if (!json.p || !json.s) return { ok: false, error: "Formato inválido" };
-      const pub = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-      const valid = await crypto.subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, pub, b64urlToBytes(json.s), new TextEncoder().encode(JSON.stringify(json.p)));
-      if (!valid) return { ok: false, error: "Firma inválida" };
-      const now = new Date(), start = new Date(json.p.startDate), end = new Date(json.p.endDate);
-      if (now < start) return { ok: false, error: "Aún no vigente (inicio " + start.toISOString().slice(0, 10) + ")", payload: json.p };
-      if (now > end) return { ok: false, error: "Expirada el " + end.toISOString().slice(0, 10), payload: json.p, expired: true };
-      return { ok: true, payload: json.p, daysLeft: Math.ceil((end - now) / 86400000) };
-    } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
-  }
 
   function todayISO() { return new Date().toISOString().slice(0, 10); }
   function addDays(dateStr, days) { const d = new Date(dateStr + "T00:00:00"); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
@@ -212,11 +170,18 @@
     const txt = $("verifyInput").value.trim();
     if (!txt) { setStatus($("verifyResult"), "Pega una licencia.", "err"); return; }
     setStatus($("verifyResult"), "Verificando...", "info");
-    const res = await verifyLicenseLocally(txt);
-    if (res.ok) {
-      setStatus($("verifyResult"), "VÁLIDA. " + res.payload.email + " / " + res.payload.whatsapp + ". Días restantes: " + res.daysLeft + ".", "ok");
-    } else {
-      setStatus($("verifyResult"), "INVÁLIDA: " + res.error + (res.payload ? " (" + res.payload.email + ")" : ""), "err");
+    try {
+      const data = await fetch(window.location.origin + "/api/license/activate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ license: txt })
+      }).then(function (r) { return r.json(); });
+      if (data && data.ok) {
+        setStatus($("verifyResult"), "VÁLIDA. " + data.payload.email + " / " + data.payload.whatsapp + ". Días restantes: " + data.daysLeft + ".", "ok");
+      } else {
+        setStatus($("verifyResult"), "INVÁLIDA: " + (data && data.error || "desconocido"), "err");
+      }
+    } catch (e) {
+      setStatus($("verifyResult"), "Error: " + (e && e.message || e), "err");
     }
   });
 
