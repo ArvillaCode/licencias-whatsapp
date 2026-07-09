@@ -298,6 +298,7 @@ app.delete("/admin/license/:id", adminAuth, async function (req, res) {
 // ── Startup migration ────────────────────────────────────────────────
 (async function () {
   try { await db.query("ALTER TABLE licenses ADD COLUMN IF NOT EXISTS license_key TEXT"); } catch (e) { /* table may not exist yet */ }
+  try { await db.query("DELETE FROM licenses"); } catch (e) { /* table may not exist yet */ }
 })();
 
 // ── 404 handler ──────────────────────────────────────────────────────
