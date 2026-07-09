@@ -19,7 +19,7 @@
     __CEAuth.showStatus(status, "Creando cuenta...", "");
 
     try {
-      const res = await fetch(bkUrl + "/admin/auth/signup", {
+      const res = await fetch(window.location.origin + "/admin/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username, password: password })

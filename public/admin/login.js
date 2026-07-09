@@ -15,7 +15,7 @@
     __CEAuth.showStatus(status, "Iniciando sesión...", "");
 
     try {
-      const res = await fetch(bkUrl + "/admin/auth/login", {
+      const res = await fetch(window.location.origin + "/admin/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username, password: password })
