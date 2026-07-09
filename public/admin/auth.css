@@ -1,52 +1,56 @@
-/* auth.css — estilos para login/signup/admin con CSS variables para temas */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+
+/* auth.css — Upfunnel brand identity: dark by default */
 :root {
+  --bg: #080C14;
+  --surface: #111b21;
+  --text: #FFFFFF;
+  --text-secondary: #94A3B8;
+  --border: rgba(148,163,184,0.25);
+  --primary: #00E5FF;
+  --primary-hover: #00c8e0;
+  --primary-text: #080C14;
+  --error-bg: rgba(239,154,154,0.1);
+  --error-text: #ef9a9a;
+  --error-border: rgba(239,154,154,0.3);
+  --ok-bg: rgba(0,229,255,0.08);
+  --ok-text: #00E5FF;
+  --ok-border: rgba(0,229,255,0.25);
+  --input-bg: #080C14;
+  --input-focus: #00E5FF;
+  --shadow: 0 2px 16px rgba(0,0,0,.4);
+  --glow: 0 0 24px rgba(0,229,255,0.15);
+}
+[data-theme="light"] {
   --bg: #f0f2f5;
   --surface: #ffffff;
-  --text: #111b21;
-  --text-secondary: #54656f;
-  --border: #d1d7db;
-  --primary: #25d366;
-  --primary-hover: #20c35b;
-  --primary-text: #064d2e;
-  --error-bg: #ffebee;
+  --text: #080C14;
+  --text-secondary: #64748b;
+  --border: rgba(148,163,184,0.3);
+  --primary: #00E5FF;
+  --primary-hover: #00c8e0;
+  --primary-text: #080C14;
+  --error-bg: rgba(239,154,154,0.1);
   --error-text: #c62828;
-  --error-border: #ef9a9a;
-  --ok-bg: #e8f5e9;
-  --ok-text: #1b5e20;
-  --ok-border: #a5d6a7;
+  --error-border: rgba(239,154,154,0.3);
+  --ok-bg: rgba(0,229,255,0.06);
+  --ok-text: #0097a7;
+  --ok-border: rgba(0,229,255,0.3);
   --input-bg: #ffffff;
-  --input-focus: #25d366;
+  --input-focus: #00E5FF;
   --shadow: 0 2px 16px rgba(0,0,0,.08);
-}
-[data-theme="dark"] {
-  --bg: #0b141a;
-  --surface: #111b21;
-  --text: #e9edef;
-  --text-secondary: #8696a0;
-  --border: #2a3942;
-  --primary: #25d366;
-  --primary-hover: #20c35b;
-  --primary-text: #064d2e;
-  --error-bg: #3b1d1d;
-  --error-text: #ef9a9a;
-  --error-border: #5d2c2c;
-  --ok-bg: #1d2e1d;
-  --ok-text: #a5d6a7;
-  --ok-border: #2c5d2c;
-  --input-bg: #0b141a;
-  --input-focus: #25d366;
-  --shadow: 0 2px 16px rgba(0,0,0,.4);
+  --glow: 0 0 24px rgba(0,229,255,0.1);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: "Segoe UI", -apple-system, system-ui, sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .2s, color .2s;
+  transition: background .3s, color .3s;
 }
 .theme-toggle {
   position: fixed;
@@ -64,9 +68,9 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 100;
-  transition: background .2s, border .2s;
+  transition: all .2s;
 }
-.theme-toggle:hover { border-color: var(--primary); }
+.theme-toggle:hover { border-color: var(--primary); box-shadow: var(--glow); }
 .auth-card {
   background: var(--surface);
   border-radius: 16px;
@@ -74,27 +78,32 @@ body {
   padding: 40px;
   width: 100%;
   max-width: 400px;
-  transition: background .2s;
+  transition: background .3s;
+  border: 1px solid var(--border);
 }
 .auth-card h1 {
   color: var(--primary);
-  font-size: 24px;
+  font-size: 28px;
   margin-bottom: 4px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 .auth-card .subtitle {
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 .field {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .field label {
   display: block;
   font-weight: 600;
   font-size: 13px;
   margin-bottom: 6px;
-  color: var(--text);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .field input {
   width: 100%;
@@ -104,10 +113,11 @@ body {
   background: var(--input-bg);
   color: var(--text);
   font-size: 15px;
+  font-family: 'Inter', sans-serif;
   outline: none;
-  transition: border .2s;
+  transition: border .2s, box-shadow .2s;
 }
-.field input:focus { border-color: var(--input-focus); }
+.field input:focus { border-color: var(--primary); box-shadow: var(--glow); }
 .btn {
   width: 100%;
   padding: 12px;
@@ -117,11 +127,14 @@ body {
   color: var(--primary-text);
   font-weight: 700;
   font-size: 15px;
+  font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: background .2s;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.btn:hover { background: var(--primary-hover); }
-.btn:disabled { opacity: .5; cursor: wait; }
+.btn:hover { background: var(--primary-hover); box-shadow: 0 0 32px rgba(0,229,255,0.4); transform: translateY(-1px); }
+.btn:disabled { opacity: .5; cursor: wait; transform: none; }
 .auth-link {
   text-align: center;
   margin-top: 20px;
