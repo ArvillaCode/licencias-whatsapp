@@ -393,6 +393,46 @@
 
   function isReady() { return ready; }
 
+  async function getMyPhoneFromIDB() {
+    try {
+      const dbs = await indexedDB.databases();
+      for (const dbInfo of dbs) {
+        if (!dbInfo || !dbInfo.name) continue;
+        try {
+          const db = await new Promise(function (resolve, reject) {
+            const req = indexedDB.open(dbInfo.name, dbInfo.version);
+            req.onerror = function () { reject(req.error); };
+            req.onsuccess = function () { resolve(req.result); };
+          });
+          const storeNames = Array.from(db.objectStoreNames);
+          for (const storeName of storeNames) {
+            try {
+              const allKeys = await new Promise(function (resolve) {
+                const tx = db.transaction(storeName, "readonly");
+                const store = tx.objectStore(storeName);
+                const req = store.getAllKeys();
+                req.onsuccess = function () { resolve(req.result || []); };
+                req.onerror = function () { resolve([]); };
+              });
+              for (const key of allKeys) {
+                const keyStr = String(key);
+                if (keyStr.indexOf("@s.whatsapp.net") !== -1) {
+                  const phone = keyStr.split("@")[0];
+                  if (phone && phone.length >= 10 && /^\d+$/.test(phone)) {
+                    db.close();
+                    return phone;
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+          db.close();
+        } catch (e) {}
+      }
+      return null;
+    } catch (e) { LOG("getMyPhoneFromIDB error:", e.message); return null; }
+  }
+
   async function getStats(groupId) {
     const partsRes = { participants: await getParticipants(groupId) };
     const participants = (partsRes && partsRes.participants) || [];
@@ -425,6 +465,7 @@
         case "getAbout": return { about: await getAbout(msg.participantId) };
         case "toPhone": return { phone: toPhoneFromWid(msg.participantId) };
         case "getMyPhone": return { phone: getMyPhone() };
+        case "getMyPhoneAsync": return { phone: await getMyPhoneFromIDB() };
         default: throw new Error("Tipo desconocido: " + msg.type);
       }
     } catch (e) {

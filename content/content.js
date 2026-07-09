@@ -289,7 +289,14 @@
         try {
           if (!readyState) await waitForReady();
           const res = await sendToInject("getMyPhone", {}, 10000);
-          reply(sendResponse, { phone: (res && res.phone) || null });
+          let phone = (res && res.phone) || null;
+          if (!phone) {
+            try {
+              const res2 = await sendToInject("getMyPhoneAsync", {}, 10000);
+              phone = (res2 && res2.phone) || null;
+            } catch (e) {}
+          }
+          reply(sendResponse, { phone: phone });
         } catch (e) { reply(sendResponse, { phone: null, error: String(e && e.message || e) }); }
       });
       return true;
