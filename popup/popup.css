@@ -8,6 +8,8 @@ body {
   background: #f7f7f8;
 }
 .hint { font-size: 11px; color: #666; margin: 4px 0 8px; }
+.hint a { color: #128c7e; font-weight: 600; text-decoration: none; }
+.hint a:hover { text-decoration: underline; }
 .hidden { display: none !important; }
 .license-gate {
   padding: 12px;

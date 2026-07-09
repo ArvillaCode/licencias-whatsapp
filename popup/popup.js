@@ -23,7 +23,7 @@
       el.className = "status";
       el.innerHTML = "";
     }
-    $("licenseHint").classList.remove("hidden");
+    $("licenseHintMsg").classList.remove("hidden");
     refreshLicenseInfo();
   }
   function showMainApp() {
@@ -50,14 +50,14 @@
   }
 
   async function checkLicenseAtStart() {
-    if (!window.__CELicense) { showLicenseGate("Módulo de licencia no cargado."); return; }
-    if (!window.__CELicense.hasPubKey()) {
-      showLicenseGate("No hay clave pública configurada. El administrador debe generar un par de claves en admin/admin.html y pegar la clave pública en popup/public-key.js.");
+    if (!window.__CELicense) { showLicenseGate(""); return; }
+    if (!(await window.__CELicense.hasPubKey())) {
+      showLicenseGate("");
       return;
     }
     const res = await window.__CELicense.checkStored(true);
     if (res.valid) { showMainApp(); return; }
-    if (res.expired) showLicenseGate("Tu licencia expiró el " + (res.payload && res.payload.endDate ? res.payload.endDate.slice(0, 10) : "?") + ". Contacta al administrador para renovarla.");
+    if (res.expired) showLicenseGate("Tu licencia expiró el " + (res.payload && res.payload.endDate ? res.payload.endDate.slice(0, 10) : "?") + ". <a href='https://wa.me/573218101385?text=Hola%20Gabriel%20quiero%20renovar%20mi%20licencia' target='_blank'>Solicita renovación aquí</a>.");
     else showLicenseGate("No hay licencia activa. Introduce tu clave para activar la extensión.");
   }
 
