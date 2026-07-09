@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Contact Extract for WhatsApp",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "description": "Extrae contactos de tus grupos de WhatsApp Web a CSV, JSON y XLSX.",
-  "permissions": ["storage", "downloads", "scripting"],
+  "permissions": ["storage", "downloads", "scripting", "alarms"],
   "host_permissions": ["https://web.whatsapp.com/*", "https://dashboard-licence.upfunnel.click/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Contact Extract",

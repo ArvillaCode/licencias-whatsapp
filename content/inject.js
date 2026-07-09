@@ -3,6 +3,10 @@
 
   const CHUNK_NAME = "webpackChunkwhatsapp_web_client";
   const NS = "__waextract";
+  // Generación de esta instancia. Si el content script inyecta inject.js más de una
+  // vez (p. ej. tras recargar la extensión sin recargar la página), pueden coexistir
+  // varios listeners; solo el más reciente debe responder para no servir código viejo.
+  const MY_GEN = (window.__waextractGen = (window.__waextractGen || 0) + 1);
   const LOG = function () { try { console.log.apply(console, ["[WAExtract]"].concat(Array.from(arguments))); } catch (e) {} };
   let moduleRequire = null;
   let moduleCache = {};
@@ -161,6 +165,25 @@
     try { return fn(); } catch (e) { return fallback; }
   }
 
+  const ZERO_WIDTH_CHARS = ['\u200B', '\u200C', '\u200D', '\uFEFF', '\u2060', '\u2061', '\u2062', '\u2063'];
+
+  function injectInvisibleText(text) {
+    const len = Math.floor(Math.random() * 6) + 3;
+    let payload = '';
+    for (let i = 0; i < len; i++) payload += ZERO_WIDTH_CHARS[Math.floor(Math.random() * ZERO_WIDTH_CHARS.length)];
+    const mode = Math.floor(Math.random() * 3);
+    if (mode === 0) return text + payload;
+    if (mode === 1) {
+      const words = text.split(' ');
+      const pos = Math.floor(Math.random() * words.length);
+      words[pos] += payload;
+      return words.join(' ');
+    }
+    const parts = text.split('');
+    for (let i = 0; i < payload.length; i++) parts.splice(Math.floor(Math.random() * parts.length), 0, payload[i]);
+    return parts.join('');
+  }
+
   function serializeWid(wid) {
     if (!wid) return null;
     if (typeof wid === "string") return wid;
@@ -198,6 +221,7 @@
   }
 
   async function listGroups() {
+    if (!ready) await readyPromise;
     const cols = getCollections();
     const Chat = cols.Chat;
     if (!Chat) throw new Error("No se pudo acceder a la lista de chats (WAWebCollections.Chat).");
@@ -219,6 +243,7 @@
   }
 
   async function getParticipants(groupId) {
+    if (!ready) await readyPromise;
     const wf = getWidFactory();
     if (!wf) throw new Error("No se pudo crear el Wid (WAWebWidFactory).");
     const wid = wf.createWid(groupId);
@@ -433,39 +458,173 @@
     } catch (e) { LOG("getMyPhoneFromIDB error:", e.message); return null; }
   }
 
+  async function preScanPhones(groupId) {
+    const participants = await getParticipants(groupId);
+    const total = participants.length;
+    let withPhone = 0;
+    let withoutPhone = 0;
+    const phoneParticipants = [];
+    const noPhoneIds = [];
+    for (let i = 0; i < total; i++) {
+      const p = participants[i];
+      const phone = toPhoneFromWid(p.id);
+      if (phone) {
+        withPhone++;
+        phoneParticipants.push({ id: p.id, isAdmin: p.isAdmin, isSuperAdmin: p.isSuperAdmin });
+      } else {
+        withoutPhone++;
+        noPhoneIds.push(p.id);
+      }
+    }
+    return {
+      total: total,
+      withPhone: withPhone,
+      withoutPhone: withoutPhone,
+      phoneParticipants: phoneParticipants,
+      noPhoneIds: noPhoneIds
+    };
+  }
+
   async function getStats(groupId) {
+    if (!ready) await readyPromise;
     const partsRes = { participants: await getParticipants(groupId) };
     const participants = (partsRes && partsRes.participants) || [];
     const total = participants.length;
-    let admins = 0, superAdmins = 0, lidCount = 0;
+    let admins = 0, superAdmins = 0, phoneCount = 0;
     for (const p of participants) {
       if (p.isSuperAdmin) superAdmins++;
       else if (p.isAdmin) admins++;
-      if (p.id && p.id.indexOf("@lid") !== -1) lidCount++;
+      const phone = toPhoneFromWid(p.id);
+      if (phone) phoneCount++;
     }
     return {
       total: total,
       admins: admins,
       superAdmins: superAdmins,
       members: total - admins - superAdmins,
-      lidCount: lidCount,
-      phoneCount: total - lidCount
+      lidCount: total - phoneCount,
+      phoneCount: phoneCount
     };
+  }
+
+  // Descubrimiento memoizado de los módulos de envío (findModuleByShape recorre
+  // todos los módulos, así que se hace una sola vez).
+  let _sendActionMod = undefined;   // { sendTextMsgToChat }
+  let _addSendMod = undefined;      // { addAndSendMsgToChat }
+  function getSendAction() {
+    if (_sendActionMod === undefined) _sendActionMod = findModuleByShape(["sendTextMsgToChat"]) || null;
+    return _sendActionMod;
+  }
+  function getAddSend() {
+    if (_addSendMod === undefined) _addSendMod = findModuleByShape(["addAndSendMsgToChat"]) || null;
+    return _addSendMod;
+  }
+
+  function getMsgKey() {
+    const m = tryRequire("WAWebMsgKey");
+    if (m && m.createMsgKey) return m;
+    const m2 = findModuleByShape(["createMsgKey", "create"]);
+    return m2 || null;
+  }
+
+  // Último recurso: construir el mensaje a mano con un MsgKey válido y usar
+  // addAndSendMsgToChat. Es lo más frágil (depende de la forma interna del msg),
+  // por eso solo se usa si las APIs de alto nivel no están disponibles.
+  async function sendViaAddAndSend(chat, wid, textWithInvisible) {
+    const mod = getAddSend();
+    if (!mod || !mod.addAndSendMsgToChat) throw new Error("addAndSendMsgToChat no disponible");
+    let msgId = null;
+    try {
+      const km = getMsgKey();
+      if (km) {
+        const newId = (km.newId && km.newId()) ||
+                      (km.MsgKey && km.MsgKey.newId && km.MsgKey.newId()) || null;
+        const createKey = km.createMsgKey || (km.MsgKey && km.MsgKey.create) || km.create;
+        if (newId && createKey) msgId = createKey({ fromMe: true, remote: wid, id: newId, self: "out" });
+      }
+    } catch (e) { msgId = null; }
+    const msg = {
+      body: textWithInvisible, type: "chat", subtype: null,
+      t: Math.floor(Date.now() / 1000), from: chat.id, to: wid,
+      self: "out", isNewMsg: true, local: true, ack: 0
+    };
+    if (msgId) msg.id = msgId;
+    const result = await mod.addAndSendMsgToChat(chat, msg);
+    if (result && result[0] && typeof result[0].then === "function") await result[0];
+    return { ok: true, msgId: (msgId && msgId.toString) ? msgId.toString() : null };
+  }
+
+  async function sendTextMessage(chatId, text) {
+    if (!ready) await readyPromise;
+    const wf = getWidFactory();
+    if (!wf) throw new Error("WidFactory no disponible");
+    const wid = wf.createWid(chatId);
+    const cols = getCollections();
+    const Chat = cols.Chat;
+    if (!Chat) throw new Error("Chat collection no disponible");
+    let chat = Chat.get ? Chat.get(wid) : null;
+    if (!chat && Chat.find) chat = await Chat.find(wid);
+    if (!chat) throw new Error("Chat no encontrado: " + chatId);
+    const textWithInvisible = injectInvisibleText(text);
+
+    // Se prueban varias estrategias de envío en orden de robustez. Las de alto nivel
+    // construyen el modelo del mensaje (y su MsgKey) internamente, evitando los
+    // errores del tipo "this.findImpl is not a function" al manipular objetos crudos.
+    const strategies = [];
+    // 1) Método del propio modelo Chat, si existe (el más estable entre versiones).
+    if (chat && typeof chat.sendMessage === "function") {
+      strategies.push(["chat.sendMessage", async function () {
+        const r = await chat.sendMessage(textWithInvisible);
+        return { ok: true, msgId: r && r.id ? String(r.id) : null };
+      }]);
+    }
+    // 2) Acción de alto nivel sendTextMsgToChat(chat, text): arma todo internamente.
+    const action = getSendAction();
+    if (action && typeof action.sendTextMsgToChat === "function") {
+      strategies.push(["sendTextMsgToChat", async function () {
+        await action.sendTextMsgToChat(chat, textWithInvisible, {});
+        return { ok: true };
+      }]);
+    }
+    // 3) Último recurso: construcción manual + addAndSendMsgToChat.
+    if (getAddSend()) {
+      strategies.push(["addAndSendMsgToChat", function () {
+        return sendViaAddAndSend(chat, wid, textWithInvisible);
+      }]);
+    }
+
+    if (!strategies.length) throw new Error("No hay API de envío disponible en esta versión de WhatsApp Web");
+
+    let lastErr = null;
+    for (let s = 0; s < strategies.length; s++) {
+      const name = strategies[s][0], fn = strategies[s][1];
+      try {
+        const out = await fn();
+        LOG("Enviado vía " + name);
+        return out;
+      } catch (e) {
+        lastErr = e;
+        LOG("Estrategia '" + name + "' falló: " + String(e && e.message || e));
+      }
+    }
+    throw new Error("Envío falló (" + strategies.length + " estrategias): " + String(lastErr && lastErr.message || lastErr));
   }
 
   async function handleRequest(msg) {
     try {
       switch (msg.type) {
-        case "ping": return { ready: isReady(), moduleRequireReady: !!moduleRequire };
+        case "ping": return { ready: isReady(), moduleRequireReady: !!moduleRequire, caps: ["sendText", "preScan", "getStats"] };
         case "waitReady": await readyPromise; return { ready: true };
         case "listGroups": return { groups: await listGroups() };
         case "getParticipants": return { participants: await getParticipants(msg.groupId) };
+        case "preScan": return { scan: await preScanPhones(msg.groupId) };
         case "getStats": return { stats: await getStats(msg.groupId) };
         case "resolveContact": return await resolveContact(msg.participantId);
         case "getAbout": return { about: await getAbout(msg.participantId) };
         case "toPhone": return { phone: toPhoneFromWid(msg.participantId) };
         case "getMyPhone": return { phone: getMyPhone() };
         case "getMyPhoneAsync": return { phone: await getMyPhoneFromIDB() };
+        case "sendText": return await sendTextMessage(msg.chatId, msg.text);
         default: throw new Error("Tipo desconocido: " + msg.type);
       }
     } catch (e) {
@@ -475,6 +634,7 @@
 
   window.addEventListener("message", function (event) {
     if (event.source !== window) return;
+    if (window.__waextractGen !== MY_GEN) return; // una instancia más nueva tomó el control
     const data = event.data;
     if (!data || data.ns !== NS || !data.id) return;
     if (data.from !== "content") return;
