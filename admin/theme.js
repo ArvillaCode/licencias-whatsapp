@@ -1,9 +1,8 @@
-// theme.js — lógica de tema light/dark compartida entre login, signup y admin
+// theme.js — Upfunnel: dark by default
 (function () {
   const THEME_KEY = "ce_admin_theme";
   const saved = localStorage.getItem(THEME_KEY);
-  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const initial = saved || (prefersDark ? "dark" : "light");
+  const initial = saved || "dark";
   document.documentElement.setAttribute("data-theme", initial);
 
   window.__CETheme = {
