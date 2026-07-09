@@ -82,6 +82,19 @@ async function deleteLicense(id) {
   await query("DELETE FROM licenses WHERE id = $1", [id]);
 }
 
+// ── App config (RSA keys, etc.) ────────────────────────────────────
+async function getConfig(key) {
+  const res = await query("SELECT value FROM app_config WHERE key = $1 LIMIT 1", [key]);
+  return res.rows[0] ? res.rows[0].value : null;
+}
+
+async function setConfig(key, value) {
+  await query(
+    "INSERT INTO app_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2",
+    [key, value]
+  );
+}
+
 module.exports = {
   findUserByUsername,
   createUser,
@@ -94,4 +107,6 @@ module.exports = {
   setLicenseRevoked,
   reissueLicense,
   deleteLicense,
+  getConfig,
+  setConfig,
 };

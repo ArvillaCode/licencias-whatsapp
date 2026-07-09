@@ -17,28 +17,33 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 const JWT_EXPIRES = "30d";
 
-// ── RSA key pair (loaded once on cold start) ────────────────────────
+// ── RSA key pair (persisted in DB) ─────────────────────────────────
 let keyPair = null;
 
 async function loadKeyPair() {
   if (keyPair) return keyPair;
-  const KEY_FILE = path.join("/tmp", "private-key.json");
-  if (fs.existsSync(KEY_FILE)) {
-    const raw = JSON.parse(fs.readFileSync(KEY_FILE, "utf8"));
-    keyPair = {
-      privateKey: await crypto.webcrypto.subtle.importKey("jwk", raw.privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
-      publicKey: await crypto.webcrypto.subtle.importKey("jwk", raw.publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
-      publicJwk: raw.publicJwk, privateJwk: raw.privateJwk,
-    };
-    return keyPair;
-  }
+  // Try to load from DB first
+  try {
+    const stored = await db.getConfig("rsa_keypair");
+    if (stored) {
+      const raw = JSON.parse(stored);
+      keyPair = {
+        privateKey: await crypto.webcrypto.subtle.importKey("jwk", raw.privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
+        publicKey: await crypto.webcrypto.subtle.importKey("jwk", raw.publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
+        publicJwk: raw.publicJwk, privateJwk: raw.privateJwk,
+      };
+      return keyPair;
+    }
+  } catch (e) { /* table may not exist yet */ }
+  // Generate new pair and persist
   const kp = await crypto.webcrypto.subtle.generateKey(
     { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
     true, ["sign", "verify"]
   );
   const privateJwk = await crypto.webcrypto.subtle.exportKey("jwk", kp.privateKey);
   const publicJwk = await crypto.webcrypto.subtle.exportKey("jwk", kp.publicKey);
-  fs.writeFileSync(KEY_FILE, JSON.stringify({ privateJwk, publicJwk }, null, 2));
+  const jwks = JSON.stringify({ privateJwk, publicJwk });
+  try { await db.setConfig("rsa_keypair", jwks); } catch (e) { /* persist best-effort */ }
   keyPair = {
     privateKey: await crypto.webcrypto.subtle.importKey("jwk", privateJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]),
     publicKey: await crypto.webcrypto.subtle.importKey("jwk", publicJwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, true, ["verify"]),
