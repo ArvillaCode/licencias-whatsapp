@@ -179,7 +179,7 @@
         }
       }
       if (attempt === 0 && (!res || res.error)) {
-        setStatus("Inyectando scripts en WhatsApp Web...");
+        setStatus("Conectando con WhatsApp Web...");
         const ok = await injectScripts(waTabId);
         if (ok) { await sleep(500); continue; }
       }
