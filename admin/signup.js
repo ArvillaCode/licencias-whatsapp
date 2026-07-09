@@ -1,11 +1,7 @@
 (function () {
   "use strict";
   __CEAuth.initThemeBtn("themeBtn");
-
-  var bkUrl = window.location.origin;
-  __CEAuth.setBkUrl(bkUrl);
-  var urlField = document.getElementById("bkUrl");
-  if (urlField) { urlField.style.display = "none"; }
+  __CEAuth.setBkUrl(window.location.origin);
 
   document.getElementById("signupBtn").addEventListener("click", async function () {
     const status = document.getElementById("status");
