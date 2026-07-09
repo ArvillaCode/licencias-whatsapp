@@ -6,7 +6,7 @@ window.__CEAuth = {
   setToken: function (t) { localStorage.setItem(window.__CEAuth.JWT_KEY, t); },
   clearToken: function () { localStorage.removeItem(window.__CEAuth.JWT_KEY); },
   getBkUrl: function () {
-    return (localStorage.getItem(window.__CEAuth.BK_URL_KEY) || "").replace(/\/$/, "") || "";
+    return (localStorage.getItem(window.__CEAuth.BK_URL_KEY) || "").replace(/\/$/, "") || window.location.origin;
   },
   setBkUrl: function (url) { localStorage.setItem(window.__CEAuth.BK_URL_KEY, url); },
 

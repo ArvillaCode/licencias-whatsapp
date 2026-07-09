@@ -1,18 +1,19 @@
 (function () {
   "use strict";
   __CEAuth.initThemeBtn("themeBtn");
-  __CEAuth.initBkField(document.getElementById("bkUrl"));
+
+  var bkUrl = window.location.origin;
+  __CEAuth.setBkUrl(bkUrl);
+  var urlField = document.getElementById("bkUrl");
+  if (urlField) { urlField.style.display = "none"; }
 
   document.getElementById("loginBtn").addEventListener("click", async function () {
     const status = document.getElementById("status");
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
-    const bkUrl = document.getElementById("bkUrl").value.trim().replace(/\/$/, "");
 
-    if (!bkUrl) { __CEAuth.showStatus(status, "Introduce la URL del backend.", "error"); return; }
     if (!username || !password) { __CEAuth.showStatus(status, "Introduce usuario y contraseña.", "error"); return; }
 
-    __CEAuth.setBkUrl(bkUrl);
     const btn = document.getElementById("loginBtn");
     btn.disabled = true;
     __CEAuth.showStatus(status, "Iniciando sesión...", "");
