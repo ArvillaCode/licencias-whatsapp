@@ -43,6 +43,7 @@ export function MonthDetailForm({
   const [responsible, setResponsible] = useState(forcedResponsible ?? record.responsible ?? '');
   const [amountPaid, setAmountPaid] = useState(record.amountPaid?.toString() ?? suggestedAmount);
   const [paymentMethod, setPaymentMethod] = useState(record.paymentMethod ?? '');
+  const [notes, setNotes] = useState(record.notes ?? '');
   const [justSaved, setJustSaved] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -51,6 +52,7 @@ export function MonthDetailForm({
     setResponsible(forcedResponsible ?? record.responsible ?? '');
     setAmountPaid(record.amountPaid?.toString() ?? suggestedAmount);
     setPaymentMethod(record.paymentMethod ?? '');
+    setNotes(record.notes ?? '');
     setJustSaved(false);
     setValidationError(null);
   }, [record.id]);
@@ -59,7 +61,8 @@ export function MonthDetailForm({
     paidAt !== (record.paidAt ? record.paidAt.slice(0, 10) : todayStr()) ||
     responsible !== (forcedResponsible ?? record.responsible ?? '') ||
     amountPaid !== (record.amountPaid?.toString() ?? suggestedAmount) ||
-    paymentMethod !== (record.paymentMethod ?? '');
+    paymentMethod !== (record.paymentMethod ?? '') ||
+    notes !== (record.notes ?? '');
 
   function handleSave() {
     const missing: string[] = [];
@@ -82,6 +85,7 @@ export function MonthDetailForm({
           responsible,
           amountPaid: amountPaid === '' ? null : Number(amountPaid),
           paymentMethod,
+          notes: notes || null,
         },
       },
       {
@@ -160,6 +164,19 @@ export function MonthDetailForm({
           </datalist>
         </label>
       </div>
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+          Notas
+        </span>
+        <textarea
+          className="input"
+          rows={2}
+          placeholder="Notas opcionales sobre este pago…"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </label>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

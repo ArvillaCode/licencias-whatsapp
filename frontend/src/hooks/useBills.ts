@@ -31,7 +31,7 @@ export function useCreateBillType() {
 export function useUpdateBillType() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: { name?: string; active?: boolean; order?: number; paymentUrl?: string | null } }) =>
+    mutationFn: ({ id, input }: { id: number; input: { name?: string; active?: boolean; order?: number; paymentUrl?: string | null; paymentInstructions?: string | null; sendToTenant?: boolean } }) =>
       billTypesApi.update(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: BILL_TYPES_KEY }),
   });

@@ -24,13 +24,18 @@ export function DashboardView() {
             Resumen de recibos y gastos de todas las unidades
           </p>
         </div>
-        <select className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-          {YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <a className="btn" href={`/api/export/monthly-records?year=${year}`} download style={{ textDecoration: 'none' }}>
+            📥 Exportar CSV
+          </a>
+          <select className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+            {YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {isLoading && <div style={{ color: 'var(--color-text-secondary)' }}>Cargando dashboard…</div>}

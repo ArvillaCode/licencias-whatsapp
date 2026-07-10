@@ -10,7 +10,7 @@ export const billsApi = {
 export const billTypesApi = {
   list: () => api.get<BillType[]>('/bill-types'),
   create: (name: string) => api.post<BillType>('/bill-types', { name }),
-  update: (id: number, input: Partial<Pick<BillType, 'name' | 'order' | 'active' | 'paymentUrl'>>) =>
+  update: (id: number, input: Partial<Pick<BillType, 'name' | 'order' | 'active' | 'paymentUrl' | 'paymentInstructions' | 'sendToTenant'>>) =>
     api.put<BillType>(`/bill-types/${id}`, input),
   remove: (id: number) => api.delete<void>(`/bill-types/${id}`),
 };

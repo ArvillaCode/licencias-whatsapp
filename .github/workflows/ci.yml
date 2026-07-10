@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: apto_admin_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/apto_admin_test
+
+      # Aplicar migración manual (paymentInstructions, sendToTenant)
+      - run: PGPASSWORD=postgres psql -h localhost -U postgres -d apto_admin_test -f backend/prisma/migrations/d0_billtype_fields.sql
+
+      - run: npx tsx backend/prisma/seed.ts
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/apto_admin_test
+          ADMIN_EMAIL: test@test.com
+          ADMIN_PASSWORD: test123
+
+      - run: npx vitest run
+        working-directory: backend
+        env:
+          NODE_ENV: development
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/apto_admin_test
+          JWT_SECRET: ci-secret
+
+      - run: npm run lint --prefix frontend

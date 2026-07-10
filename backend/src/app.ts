@@ -14,6 +14,7 @@ import { paymentMethodsRouter, responsiblesRouter } from './routes/catalogs.rout
 import { dashboardRouter } from './routes/dashboard.routes';
 import { usersRouter } from './routes/users.routes';
 import { tenantsRouter } from './routes/tenants.routes';
+import { csvRouter } from './routes/csv.routes';
 import { requireAuth } from './middleware/auth';
 
 export function createApp() {
@@ -46,6 +47,7 @@ export function createApp() {
   api.use('/dashboard', dashboardRouter);
   api.use('/users', usersRouter);
   api.use('/tenants', tenantsRouter);
+  api.use('/', csvRouter);
   app.use('/api', api);
 
   // En Vercel el frontend estático lo sirve el CDN; localmente lo sirve Express.

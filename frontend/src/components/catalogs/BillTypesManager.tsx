@@ -29,9 +29,10 @@ export function BillTypesManager() {
             Cada tipo de recibo puede tener el enlace de pago en línea de la empresa. Se usará en el botón
             "Pagar en línea" del mes actual.
           </p>
-          {data.map((type) => (
-            <label key={type.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          {data.map((type, i) => (
+            <div key={type.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.5rem 0', borderTop: i === 0 ? 'none' : '1px solid var(--color-border)' }}>
               <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{type.name}</span>
+
               <input
                 className="input"
                 type="url"
@@ -42,7 +43,28 @@ export function BillTypesManager() {
                   if (v !== (type.paymentUrl ?? '')) update.mutate({ id: type.id, input: { paymentUrl: v || null } });
                 }}
               />
-            </label>
+
+              <textarea
+                className="input"
+                placeholder="Instrucciones de pago (opcional)"
+                rows={2}
+                defaultValue={type.paymentInstructions ?? ''}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v !== (type.paymentInstructions ?? ''))
+                    update.mutate({ id: type.id, input: { paymentInstructions: v || null } });
+                }}
+              />
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: 'var(--font-size-sm)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  defaultChecked={type.sendToTenant}
+                  onChange={(e) => update.mutate({ id: type.id, input: { sendToTenant: e.target.checked } })}
+                />
+                Enviar recordatorio al inquilino
+              </label>
+            </div>
           ))}
         </div>
       )}

@@ -9,7 +9,8 @@
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && npm --prefix frontend install && npm --prefix frontend run build",
     "db:push": "prisma db push",
-    "db:seed": "tsx backend/prisma/seed.ts"
+    "db:seed": "tsx backend/prisma/seed.ts",
+    "backup": "tsx backend/scripts/backup.ts"
   },
   "prisma": {
     "schema": "backend/prisma/schema.prisma",

@@ -15,6 +15,8 @@ export interface BillType {
   order: number;
   active: boolean;
   paymentUrl: string | null;
+  paymentInstructions: string | null;
+  sendToTenant: boolean;
 }
 
 export interface Bill {
